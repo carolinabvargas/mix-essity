@@ -85,9 +85,22 @@
   .list-head{ display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:10px; }
   .list-head .count{ font-size:12px; color:var(--muted); }
   #storeList{ max-height:calc(100vh - 230px); overflow-y:auto; padding-right:4px; }
-  .store-row{ display:block; width:100%; text-align:left; padding:9px 11px; border:1px solid var(--line-soft); border-radius:9px; background:var(--surface); margin-bottom:6px; cursor:pointer; font:inherit; color:inherit; position:relative; }
+  .store-row{ display:block; width:100%; text-align:left; padding:9px 11px 9px 38px; border:1px solid var(--line-soft); border-radius:9px; background:var(--surface); margin-bottom:6px; cursor:pointer; font:inherit; color:inherit; position:relative; }
   .store-row:hover{ border-color:var(--pink); }
+  .store-row:focus-visible{ outline:2px solid var(--pink); outline-offset:2px; }
   .store-row.sel{ border-color:var(--navy); box-shadow:inset 3px 0 0 var(--pink); background:#FBFBFE; }
+  .store-row.picked{ border-color:var(--pink); background:var(--pink-soft); }
+  .store-row .pick{ position:absolute; left:8px; top:0; bottom:0; width:26px; display:flex; align-items:flex-start; justify-content:center; padding-top:10px; cursor:pointer; }
+  .store-row .pick input{ width:17px; height:17px; accent-color:var(--pink); margin:0; cursor:pointer; }
+  .multi-bar{ display:flex; align-items:center; justify-content:space-between; gap:8px; flex-wrap:wrap; background:var(--pink-soft); border:1px solid var(--pink); border-radius:9px; padding:7px 10px; margin-bottom:10px; font-size:12.5px; font-weight:700; color:var(--pink); }
+  .multi-bar .btns{ display:flex; gap:6px; }
+  .sku input:indeterminate{ accent-color:var(--muted); }
+  .sku.parcial{ background:var(--surface-2); border-color:var(--line); }
+  .sku .parc{ font-size:10px; font-weight:800; color:var(--muted); flex:0 0 auto; }
+  .modal-box.ok{ text-align:center; max-width:440px; }
+  .modal-box.ok .ico{ width:52px; height:52px; border-radius:50%; background:var(--success-soft); color:var(--success); font-size:28px; font-weight:800; display:flex; align-items:center; justify-content:center; margin:2px auto 12px; }
+  .modal-box.ok h3{ margin:0 0 8px; font-size:18px; }
+  .modal-box.ok .modal-actions{ justify-content:center; }
   .store-row .loja{ font-weight:700; font-size:13px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; padding-right:64px; }
   .store-row .meta{ font-size:11.5px; color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
   .store-row .qtd{ position:absolute; top:9px; right:10px; font-size:11px; font-weight:800; color:var(--navy); background:var(--surface-2); border:1px solid var(--line-soft); border-radius:99px; padding:1px 8px; font-variant-numeric:tabular-nums; }
@@ -194,6 +207,10 @@
       <select class="filter-select" id="fRede"></select>
     </div>
     <div>
+      <label for="fBandeira" class="eyebrow" style="display:block;margin-bottom:4px;">Bandeira</label>
+      <select class="filter-select" id="fBandeira"></select>
+    </div>
+    <div>
       <label for="fUf" class="eyebrow" style="display:block;margin-bottom:4px;">UF</label>
       <select class="filter-select" id="fUf"></select>
     </div>
@@ -236,6 +253,7 @@
             <span class="count" id="listCount"></span>
             <button class="btn small" id="btnMassa" title="Adicionar ou remover SKUs em todas as lojas filtradas">⚡ Edição em massa</button>
           </div>
+          <div id="multiBar"></div>
           <div id="storeList"></div>
         </div>
       </section>
@@ -265,7 +283,7 @@
   var CICLO = "", DADOS = null;
   var LOJAS = [], LOJA_BY = {}, CNPJ_BY = {}, SKUS = [], SKU_BY = {}, CATS = [];
   var BASE = {}, REMOTE = {}, DRAFT = {};
-  var st = { ex:"", sel:null, mode:"loja", busca:"", rede:"", uf:"", cidade:"", rot:"todas", sit:"todas", marca:"", skuBusca:"", soMarcados:false };
+  var st = { ex:"", sel:null, mode:"loja", multi:{}, busca:"", rede:"", bandeira:"", uf:"", cidade:"", rot:"todas", sit:"todas", marca:"", skuBusca:"", soMarcados:false };
 
   function $(id){ return document.getElementById(id); }
   function esc(s){ return String(s==null?"":s).replace(/[&<>"']/g, function(c){ return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]; }); }
@@ -306,14 +324,15 @@
   function carteira(){ return LOJAS.filter(function(l){ return l.executivo === st.ex; }); }
   function passa(l, ate){
     if (ate > 0 && st.rede && l.rede !== st.rede) return false;
-    if (ate > 1 && st.uf && l.uf !== st.uf) return false;
-    if (ate > 2 && st.cidade && l.cidade !== st.cidade) return false;
+    if (ate > 1 && st.bandeira && l.bandeira !== st.bandeira) return false;
+    if (ate > 2 && st.uf && l.uf !== st.uf) return false;
+    if (ate > 3 && st.cidade && l.cidade !== st.cidade) return false;
     return true;
   }
   function filtradas(){
     var b = fold(st.busca).trim();
     return carteira().filter(function(l){
-      if (!passa(l, 3)) return false;
+      if (!passa(l, 4)) return false;
       if (st.rot === "rot" && !l.promotores) return false;
       if (st.rot === "fora" && l.promotores) return false;
       if (st.sit === "commix" && !curOf(l.cod).length) return false;
@@ -350,11 +369,14 @@
     if (st.rede && cart.filter(function(l){ return l.rede===st.rede; }).length===0) st.rede = "";
     opcoes($("fRede"), uniq(cart.map(function(l){ return l.rede; })), st.rede, "Todas as redes");
     var c1 = cart.filter(function(l){ return passa(l,1); });
-    if (st.uf && c1.filter(function(l){ return l.uf===st.uf; }).length===0) st.uf = "";
-    opcoes($("fUf"), uniq(c1.map(function(l){ return l.uf; })), st.uf, "Todas as UFs");
+    if (st.bandeira && c1.filter(function(l){ return l.bandeira===st.bandeira; }).length===0) st.bandeira = "";
+    opcoes($("fBandeira"), uniq(c1.map(function(l){ return l.bandeira; })), st.bandeira, "Todas as bandeiras");
     var c2 = cart.filter(function(l){ return passa(l,2); });
-    if (st.cidade && c2.filter(function(l){ return l.cidade===st.cidade; }).length===0) st.cidade = "";
-    opcoes($("fCidade"), uniq(c2.map(function(l){ return l.cidade; })), st.cidade, "Todas as cidades");
+    if (st.uf && c2.filter(function(l){ return l.uf===st.uf; }).length===0) st.uf = "";
+    opcoes($("fUf"), uniq(c2.map(function(l){ return l.uf; })), st.uf, "Todas as UFs");
+    var c3 = cart.filter(function(l){ return passa(l,3); });
+    if (st.cidade && c3.filter(function(l){ return l.cidade===st.cidade; }).length===0) st.cidade = "";
+    opcoes($("fCidade"), uniq(c3.map(function(l){ return l.cidade; })), st.cidade, "Todas as cidades");
 
     chips($("fRot"), [["todas","Todas"],["rot","No roteiro"],["fora","Fora do roteiro"]], "rot");
     chips($("fSit"), [["todas","Todas"],["commix","Com mix"],["semmix","Sem mix"],["pend","Alteradas"],["grav","Gravadas"]], "sit");
@@ -385,22 +407,49 @@
     $("listCount").textContent = lista.length === total ? total+" lojas" : lista.length+" de "+total+" lojas (filtradas)";
     $("btnMassa").disabled = !lista.length;
     $("btnMassa").className = "btn small" + (st.mode==="massa" ? " primary" : "");
+    renderMultiBar(lista);
     if (!lista.length){
       $("storeList").innerHTML = '<div class="empty-state">Nenhuma loja com esses filtros.</div>';
       return;
     }
     var html = lista.slice(0, LIST_MAX).map(function(l){
-      return '<button type="button" class="store-row'+(st.mode==="loja" && st.sel===l.cod?' sel':'')+'" data-c="'+l.cod+'">'+
+      var pk = !!st.multi[l.cod];
+      return '<div role="button" tabindex="0" class="store-row'+(st.mode==="loja" && st.sel===l.cod?' sel':'')+(pk?' picked':'')+'" data-c="'+l.cod+'">'+
+        '<label class="pick" title="Selecionar para editar várias lojas juntas"><input type="checkbox" data-pick="'+l.cod+'"'+(pk?' checked':'')+' aria-label="Selecionar '+esc(l.nome)+'"></label>'+
         '<span class="qtd" title="SKUs Essity marcados">'+curOf(l.cod).length+'</span>'+
         '<div class="loja">'+esc(l.nome || ("Loja "+l.cod))+'</div>'+
         '<div class="meta">'+esc(fmtCnpj(l))+' · '+esc(l.bandeira)+' · '+esc(l.cidade)+(l.uf?'/'+esc(l.uf):'')+(l.bairro?' · '+esc(l.bairro):'')+'</div>'+
-        '<div class="badges">'+badgesHtml(l)+'</div></button>';
+        '<div class="badges">'+badgesHtml(l)+'</div></div>';
     }).join("");
     if (lista.length > LIST_MAX) html += '<div class="list-more">Mostrando '+LIST_MAX+' de '+lista.length+' lojas. Use a busca ou os filtros para achar as demais.</div>';
     $("storeList").innerHTML = html;
     Array.prototype.forEach.call($("storeList").querySelectorAll(".store-row"), function(b){
-      b.onclick = function(){ st.sel = Number(b.getAttribute("data-c")); st.mode = "loja"; renderList(); renderDetail(); };
+      function abrir(){ st.sel = Number(b.getAttribute("data-c")); st.mode = "loja"; renderList(); renderDetail(); }
+      b.onclick = function(e){ if (e.target.closest(".pick")) return; abrir(); };
+      b.onkeydown = function(e){ if ((e.key === "Enter" || e.key === " ") && !e.target.closest(".pick")){ e.preventDefault(); abrir(); } };
     });
+    Array.prototype.forEach.call($("storeList").querySelectorAll("input[data-pick]"), function(cb){
+      cb.onchange = function(){
+        var c = Number(cb.getAttribute("data-pick"));
+        if (cb.checked) st.multi[c] = 1; else delete st.multi[c];
+        st.mode = selecionadas().length ? "multi" : "loja";
+        renderList(); renderDetail();
+      };
+    });
+  }
+
+  /* ===== seleção de várias lojas ===== */
+  function selecionadas(){ return carteira().filter(function(l){ return st.multi[l.cod]; }); }
+  function renderMultiBar(lista){
+    var n = selecionadas().length;
+    var h = '<div class="multi-bar"><span>'+(n ? '☑ '+n+' loja'+(n>1?'s':'')+' selecionada'+(n>1?'s':'') : 'Marque a caixinha das lojas para editar várias juntas')+'</span><span class="btns">'+
+      '<button type="button" class="btn small" id="btnSelTodas"'+(!lista.length?' disabled':'')+'>Selecionar as '+Math.min(lista.length, LIST_MAX)+' da lista</button>'+
+      (n && st.mode !== "multi" ? '<button type="button" class="btn small primary" id="btnSelEditar">Editar selecionadas</button>' : '')+
+      (n ? '<button type="button" class="btn small" id="btnSelLimpar">Limpar seleção</button>' : '')+'</span></div>';
+    $("multiBar").innerHTML = h;
+    $("btnSelTodas").onclick = function(){ lista.slice(0, LIST_MAX).forEach(function(l){ st.multi[l.cod] = 1; }); st.mode = "multi"; renderList(); renderDetail(); };
+    if ($("btnSelEditar")) $("btnSelEditar").onclick = function(){ st.mode = "multi"; renderList(); renderDetail(); };
+    if ($("btnSelLimpar")) $("btnSelLimpar").onclick = function(){ st.multi = {}; st.mode = "loja"; renderList(); renderDetail(); };
   }
 
   function skusVisiveis(marcados){
@@ -439,8 +488,10 @@
   }
 
   function renderDetail(manterFoco){
-    $("detTag").textContent = st.mode === "massa" ? "Edição em massa" : "Mix da loja";
+    if (st.mode === "multi" && !selecionadas().length) st.mode = "loja";
+    $("detTag").textContent = st.mode === "massa" ? "Edição em massa" : (st.mode === "multi" ? "Mix das lojas selecionadas" : "Mix da loja");
     if (st.mode === "massa") return renderMassa(manterFoco);
+    if (st.mode === "multi") return renderMulti(manterFoco);
     var l = LOJA_BY[st.sel];
     if (!l || l.executivo !== st.ex){
       $("detail").innerHTML = '<div class="empty-state">Escolha uma loja na lista ao lado para ver e editar o mix.</div>';
@@ -510,6 +561,64 @@
       });
     };
     if ($("btnDesfazer")) $("btnDesfazer").onclick = function(){ delete DRAFT[l.cod]; saveDraft(); renderAll(); };
+  }
+
+  function renderMulti(manterFoco){
+    var sel = selecionadas(), n = sel.length, cods = sel.map(function(l){ return l.cod; });
+    var conta = {};
+    sel.forEach(function(l){ curOf(l.cod).forEach(function(s){ conta[s] = (conta[s]||0) + 1; }); });
+    var sujas = sel.filter(function(l){ return isDirty(l.cod); }).length;
+    var nomes = sel.slice(0, 4).map(function(l){ return esc(l.nome); }).join(" · ") + (n > 4 ? " · e mais "+(n-4) : "");
+
+    var h = '<div class="det-head"><h2>Editando '+n+' loja'+(n>1?'s':'')+' juntas</h2>'+
+      '<div class="meta">'+nomes+'</div>'+
+      '<div class="promo" style="color:var(--muted)">Marcar um SKU inclui nas '+n+' lojas; desmarcar retira de todas. ' +
+      'Caixinha cinza = SKU presente só em parte das lojas.</div></div>';
+    h += '<div class="det-sum"><span><b>'+n+'</b> lojas selecionadas</span>'+(sujas ? '<span style="color:var(--pink);font-weight:700;">'+sujas+' com alterações não gravadas</span>' : '')+'</div>';
+    h += '<div class="det-actions">'+
+      '<button type="button" class="btn small" id="btnCopiarMulti">Copiar mix de outra loja para as '+n+'</button>'+
+      (sujas ? '<button type="button" class="btn small danger" id="btnDesfazerMulti">Desfazer alterações das selecionadas</button>' : '')+
+      '<button type="button" class="btn small" id="btnSairMulti">Limpar seleção</button></div>';
+    h += toolsHtml(false);
+
+    var lista = skusVisiveis(null);
+    if (!lista.length) h += '<div class="empty-state">Nenhum SKU com esse filtro.</div>';
+    grupos(lista).forEach(function(g){
+      var todas = g.skus.filter(function(s){ return (conta[s.cod]||0) === n; }).length;
+      h += '<div class="group-head"><span>'+esc(g.cat)+'<span class="count">'+todas+' de '+g.skus.length+' em todas</span></span>'+
+        '<span class="gbtns"><button type="button" class="btn ghost small" data-gall="'+esc(g.cat)+'">Marcar todos</button>'+
+        '<button type="button" class="btn ghost small" data-gnone="'+esc(g.cat)+'">Desmarcar todos</button></span></div>';
+      h += '<div class="sku-grid">';
+      g.skus.forEach(function(s){
+        var c = conta[s.cod] || 0, parcial = c > 0 && c < n;
+        h += '<label class="sku'+(parcial?' parcial':'')+'"><input type="checkbox" data-s="'+s.cod+'"'+(c===n?' checked':'')+(parcial?' data-ind="1"':'')+'>'+
+          '<span class="d">'+esc(s.desc)+'<br><span class="c">'+esc(s.marca)+' · EAN '+esc(s.ean||'—')+'</span></span>'+
+          (parcial ? '<span class="parc">em '+c+' de '+n+'</span>' : '')+'</label>';
+      });
+      h += '</div>';
+    });
+    $("detail").innerHTML = h;
+    bindTools();
+    if (manterFoco && $("skuBusca")){ var i = $("skuBusca"); i.focus(); i.setSelectionRange(i.value.length, i.value.length); }
+
+    Array.prototype.forEach.call($("detail").querySelectorAll("input[data-s]"), function(cb){
+      if (cb.getAttribute("data-ind")) cb.indeterminate = true;
+      cb.onchange = function(){
+        var s = Number(cb.getAttribute("data-s"));
+        if (cb.checked) mudar(cods, function(c){ return curOf(c).concat([s]); });
+        else mudar(cods, function(c){ return curOf(c).filter(function(x){ return x !== s; }); });
+      };
+    });
+    function grupoSkus(cat){ return lista.filter(function(s){ return s.cat === cat; }).map(function(s){ return s.cod; }); }
+    Array.prototype.forEach.call($("detail").querySelectorAll("[data-gall]"), function(b){
+      b.onclick = function(){ var g = grupoSkus(b.getAttribute("data-gall")); mudar(cods, function(c){ return curOf(c).concat(g); }); };
+    });
+    Array.prototype.forEach.call($("detail").querySelectorAll("[data-gnone]"), function(b){
+      b.onclick = function(){ var g = {}; grupoSkus(b.getAttribute("data-gnone")).forEach(function(s){ g[s]=1; }); mudar(cods, function(c){ return curOf(c).filter(function(s){ return !g[s]; }); }); };
+    });
+    $("btnCopiarMulti").onclick = function(){ copiarDeOutra(null, cods); };
+    if ($("btnDesfazerMulti")) $("btnDesfazerMulti").onclick = function(){ cods.forEach(function(c){ delete DRAFT[c]; }); saveDraft(); renderAll(); };
+    $("btnSairMulti").onclick = function(){ st.multi = {}; st.mode = "loja"; renderList(); renderDetail(); };
   }
 
   function renderMassa(manterFoco){
@@ -583,8 +692,21 @@
     return ov;
   }
   function confirmar(msg, fn){ modal("<p>"+msg+"</p>", function(){ fn(); }); }
-  function copiarDeOutra(l){
-    modal('<p>Copiar o mix Essity de outra loja para <b>'+esc(l.nome)+'</b>.<br>Digite o CNPJ da loja de origem:</p><input type="text" id="codOrigem" placeholder="Ex.: 17.256.512/0055-09"><div class="err" id="codErr"></div>', function(ov){
+  function aviso(titulo, msg){
+    var ov = document.createElement("div");
+    ov.className = "modal-overlay";
+    ov.innerHTML = '<div class="modal-box ok" role="dialog" aria-modal="true"><div class="ico">✓</div><h3>'+titulo+'</h3><p>'+msg+'</p>'+
+      '<div class="modal-actions"><button class="btn primary" data-ok>OK</button></div></div>';
+    document.body.appendChild(ov);
+    function fechar(){ if (ov.parentNode) document.body.removeChild(ov); }
+    ov.querySelector("[data-ok]").onclick = fechar;
+    ov.onclick = function(e){ if (e.target === ov) fechar(); };
+    ov.querySelector("[data-ok]").focus();
+  }
+  function copiarDeOutra(l, destinos){
+    destinos = destinos || [l.cod];
+    var alvoTxt = l ? '<b>'+esc(l.nome)+'</b>' : 'as <b>'+destinos.length+' lojas selecionadas</b>';
+    modal('<p>Copiar o mix Essity de outra loja para '+alvoTxt+'.<br>Digite o CNPJ da loja de origem:</p><input type="text" id="codOrigem" placeholder="Ex.: 17.256.512/0055-09"><div class="err" id="codErr"></div>', function(ov){
       var dig = ov.querySelector("#codOrigem").value.replace(/\D/g, "");
       // CNPJ repetido: prefere a loja da carteira atual, depois a que tem mix Essity
       var cands = (CNPJ_BY[dig] || []).slice().sort(function(a, b){
@@ -595,7 +717,7 @@
       var c = o.cod;
       var m = curOf(c).slice();
       if (!m.length){ ov.querySelector("#codErr").textContent = "A loja "+o.nome+" não tem SKUs Essity no mix."; return false; }
-      mudar([l.cod], function(){ return m; });
+      mudar(destinos, function(){ return m; });
     }, "Copiar");
   }
 
@@ -630,6 +752,7 @@
         saveDraft();
         renderAll();
         setHint("✓ "+payload.lojas.length+" lojas gravadas na planilha.", "ok");
+        aviso("Dados Gravados com Sucesso", "Você receberá um e-mail quando o mix estiver disponível no App S3.");
       }).catch(function(){
         renderAll();
         setHint("Não consegui confirmar a gravação. Suas alterações continuam salvas aqui: confira a internet e clique em Gravar de novo.", "err");
@@ -734,10 +857,11 @@
     if (salvo && exs[salvo]){ st.ex = salvo; $("exSelect").value = salvo; }
 
     $("exSelect").onchange = function(){
-      st.ex = this.value; st.sel = null; st.mode = "loja"; st.rede = st.uf = st.cidade = st.busca = ""; st.rot = st.sit = "todas"; $("fBusca").value = "";
+      st.ex = this.value; st.sel = null; st.mode = "loja"; st.multi = {}; st.rede = st.bandeira = st.uf = st.cidade = st.busca = ""; st.rot = st.sit = "todas"; $("fBusca").value = "";
       lsSet("executivo_v1", st.ex); setHint("", ""); renderAll();
     };
     $("fRede").onchange = function(){ st.rede = this.value; renderAll(); };
+    $("fBandeira").onchange = function(){ st.bandeira = this.value; renderAll(); };
     $("fUf").onchange = function(){ st.uf = this.value; renderAll(); };
     $("fCidade").onchange = function(){ st.cidade = this.value; renderAll(); };
     var t; $("fBusca").oninput = function(){ var v = this.value; clearTimeout(t); t = setTimeout(function(){ st.busca = v; renderSidebar(); renderList(); if (st.mode==="massa") renderDetail(); }, 200); };
