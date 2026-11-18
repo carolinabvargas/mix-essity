@@ -317,6 +317,9 @@
       if (st.sit === "grav" && !REMOTE[l.cod]) return false;
       if (b && l._busca.indexOf(b) === -1) return false;
       return true;
+    }).sort(function(a, b){
+      // lojas no roteiro primeiro; dentro de cada grupo, pelo código da loja
+      return ((b.promotores ? 1 : 0) - (a.promotores ? 1 : 0)) || (a.cod - b.cod);
     });
   }
   function opcoes(sel, valores, atual, rotuloTodos){
@@ -362,7 +365,7 @@
 
   function badgesHtml(l){
     var h = "";
-    if (l.promotores) h += '<span class="badge rot" title="'+esc(l.promotores)+'">No roteiro · '+esc(l.promotores)+'</span>';
+    if (l.promotores) h += '<span class="badge rot" title="Promotor: '+esc(l.promotores)+'">📍 '+esc(l.promotores)+'</span>';
     else h += '<span class="badge fora">Fora do roteiro</span>';
     if (!curOf(l.cod).length) h += '<span class="badge semmix">Sem mix Essity</span>';
     if (isDirty(l.cod)) h += '<span class="badge pend">Alterada · não gravada</span>';
@@ -447,7 +450,7 @@
 
     var h = '<div class="det-head"><h2>'+esc(l.nome || ("Loja "+l.cod))+'</h2>'+
       '<div class="meta">Cód. '+l.cod+' · '+esc(l.bandeira)+' ('+esc(l.rede)+') · '+esc(l.bairro)+' · '+esc(l.cidade)+'/'+esc(l.uf)+'</div>'+
-      '<div class="promo">'+(l.promotores ? 'No roteiro · Promotor: <b>'+esc(l.promotores)+'</b>' : '<span style="color:var(--muted)">Fora do roteiro (sem promotor)</span>')+'</div></div>';
+      '<div class="promo">'+(l.promotores ? '📍 Promotor: <b>'+esc(l.promotores)+'</b>' : '<span style="color:var(--muted)">Fora do roteiro (sem promotor)</span>')+'</div></div>';
     h += '<div class="det-sum"><span><b>'+Object.keys(atual).length+'</b> SKUs Essity marcados</span>'+
       (add ? '<span class="add">+'+add+' incluídos</span>' : '')+(rem ? '<span class="rem">−'+rem+' retirados</span>' : '')+
       (isDirty(l.cod) ? '<span style="color:var(--pink);font-weight:700;">não gravado</span>' : (REMOTE[l.cod] ? '<span style="color:var(--success);font-weight:700;">gravado em '+esc(fmtData(REMOTE[l.cod].em))+'</span>' : ''))+'</div>';
