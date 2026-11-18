@@ -1,0 +1,760 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mix de Lojas — Essity</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  /* Identidade visual: mesma da Agenda do Supervisor (layout do PBI Essity) */
+  :root{
+    --pink:#E71C82; --pink-dot:#F50082; --pink-soft:rgba(231,28,130,0.10);
+    --navy:#20244C; --navy-tag:#00005A; --header-grey:#E7EAEF;
+    --bg:#F3F5F8; --surface:#ffffff; --surface-2:#F7F8FB;
+    --ink:#20244C; --muted:#6B6F8A; --line:#E3E5EC; --line-soft:#EDEFF4;
+    --success:#1F8A5B; --success-soft:#E6F4EC; --danger:#C0262D; --danger-soft:#FBEAEA;
+    --side-ink:#ffffff; --side-muted:rgba(255,255,255,0.68); --side-line:rgba(255,255,255,0.16);
+    --shadow:0 1px 2px rgba(32,36,76,0.05), 0 8px 24px -14px rgba(32,36,76,0.25);
+    --radius:12px;
+    --sans:"Inter","Segoe UI",-apple-system,Arial,sans-serif;
+    color-scheme:light;
+  }
+  *{ box-sizing:border-box; }
+  html,body{ min-height:100%; }
+  body{ margin:0; background:var(--bg); color:var(--ink); font-family:var(--sans); font-size:14px; line-height:1.45; -webkit-font-smoothing:antialiased; }
+  button{ font-family:inherit; }
+  .eyebrow{ text-transform:uppercase; letter-spacing:.08em; font-size:11px; font-weight:700; color:var(--muted); }
+
+  .testeira{ position:relative; height:84px; background:var(--header-grey); overflow:hidden; display:flex; align-items:center; justify-content:space-between; padding:0 28px; }
+  .testeira::before{ content:""; position:absolute; inset:0; background:var(--pink); clip-path:polygon(0 0, 68% 0, 64% 100%, 0 100%); }
+  .testeira img{ position:relative; display:block; }
+  .testeira .logo-spot{ height:26px; }
+  .testeira .logo-essity{ height:44px; }
+  .testeira .titulo{ position:relative; color:#fff; font-weight:800; font-size:15px; letter-spacing:.04em; text-transform:uppercase; margin-left:22px; margin-right:auto; padding-left:22px; border-left:1px solid rgba(255,255,255,.45); }
+
+  .tag{ display:inline-flex; align-items:center; gap:8px; background:var(--navy-tag); color:#fff; font-size:11px; font-weight:800; letter-spacing:.05em; text-transform:uppercase; padding:7px 14px 7px 8px; border-radius:6px; position:relative; z-index:1; }
+  .tag::before{ content:""; width:12px; height:12px; border-radius:50%; background:var(--pink-dot); flex:0 0 auto; }
+  .panel > .tag{ margin-left:12px; margin-bottom:-12px; }
+  .panel-body{ background:var(--surface); border:1px solid var(--line); border-radius:var(--radius); padding:24px 16px 16px; }
+
+  .btn{ appearance:none; border:1px solid var(--line); background:var(--surface); color:var(--ink); border-radius:8px; padding:9px 14px; font-size:13px; font-weight:700; cursor:pointer; display:inline-flex; align-items:center; justify-content:center; gap:6px; transition:border-color .15s, background .15s; }
+  .btn:hover{ border-color:var(--pink); }
+  .btn.primary{ background:var(--pink); color:#fff; border-color:var(--pink); }
+  .btn.primary:hover{ filter:brightness(1.07); }
+  .btn.ghost{ background:transparent; border-color:transparent; color:var(--muted); }
+  .btn.ghost:hover{ color:var(--ink); border-color:var(--line); }
+  .btn.small{ padding:5px 9px; font-size:12px; }
+  .btn:disabled{ opacity:.45; cursor:not-allowed; }
+  .btn.danger{ background:transparent; border-color:var(--danger); color:var(--danger); }
+  .btn.danger:hover{ background:var(--danger); color:#fff; }
+  button:focus-visible, input:focus-visible, select:focus-visible{ outline:2px solid var(--pink); outline-offset:2px; }
+
+  #app{ display:none; gap:20px; padding:20px 20px 0 0; align-items:flex-start; }
+  #app.show{ display:flex; }
+  #sidebar{ width:280px; flex:0 0 auto; background:var(--navy); color:var(--side-ink); border-radius:0 18px 18px 0; display:flex; flex-direction:column; padding:18px; gap:14px; position:sticky; top:20px; max-height:calc(100vh - 40px); overflow-y:auto; }
+  #sidebar .eyebrow{ color:var(--side-muted); }
+  .side-title{ font-size:12px; font-weight:600; color:var(--side-muted); text-align:center; }
+  .side-title b{ display:block; color:#fff; font-size:14px; font-weight:700; margin-bottom:2px; }
+  .side-sep{ height:1px; background:var(--side-line); }
+  #exSelect{ width:100%; padding:9px 10px; border-radius:8px; border:0; margin-top:4px; background:#fff; color:var(--navy); font-size:13.5px; font-weight:700; }
+  .filter-select, .filter-input{ width:100%; padding:7px 9px; border-radius:8px; border:0; background:#fff; color:var(--navy); font-size:12.5px; font-family:inherit; }
+  .stat-block{ display:flex; flex-direction:column; gap:5px; }
+  .stat-row{ display:flex; align-items:center; justify-content:space-between; font-size:12.5px; }
+  .stat-row .n{ font-variant-numeric:tabular-nums; font-weight:800; }
+  .stat-row .n.pend{ color:#FF8CC6; }
+  .stat-row .n.ok{ color:#7FE0B0; }
+  .chips{ display:flex; flex-wrap:wrap; gap:6px; }
+  .chip-filter{ font-size:11.5px; padding:4px 10px; border-radius:99px; border:1px solid var(--side-line); background:transparent; color:var(--side-muted); cursor:pointer; }
+  .chip-filter.active{ background:var(--pink); border-color:var(--pink); color:#fff; font-weight:700; }
+  .side-actions{ margin-top:auto; display:flex; flex-direction:column; gap:8px; padding-top:14px; border-top:1px solid var(--side-line); }
+  .side-actions .btn.ghost{ color:var(--side-muted); }
+  .side-actions .btn.ghost:hover{ color:#fff; border-color:var(--side-line); }
+  .side-hint{ font-size:11px; color:var(--side-muted); text-align:center; line-height:1.35; }
+  .side-hint.ok{ color:#7FE0B0; font-weight:700; }
+  .side-hint.err{ color:#FFB3B3; font-weight:700; }
+
+  #main{ flex:1; min-width:0; padding:0 0 60px; }
+  .topbar{ display:flex; align-items:flex-start; justify-content:space-between; gap:16px; margin-bottom:16px; flex-wrap:wrap; }
+  .topbar h1{ font-size:22px; margin:2px 0; letter-spacing:-.01em; font-weight:800; }
+  .topbar .sub{ color:var(--muted); font-size:13px; max-width:80ch; }
+  .note{ display:inline-flex; align-items:center; gap:6px; margin-top:8px; font-size:12px; font-weight:700; color:var(--pink); background:var(--pink-soft); padding:4px 10px; border-radius:99px; }
+
+  .cols{ display:grid; grid-template-columns:minmax(300px,380px) minmax(0,1fr); gap:18px; align-items:start; }
+  .list-head{ display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:10px; }
+  .list-head .count{ font-size:12px; color:var(--muted); }
+  #storeList{ max-height:calc(100vh - 230px); overflow-y:auto; padding-right:4px; }
+  .store-row{ display:block; width:100%; text-align:left; padding:9px 11px; border:1px solid var(--line-soft); border-radius:9px; background:var(--surface); margin-bottom:6px; cursor:pointer; font:inherit; color:inherit; position:relative; }
+  .store-row:hover{ border-color:var(--pink); }
+  .store-row.sel{ border-color:var(--navy); box-shadow:inset 3px 0 0 var(--pink); background:#FBFBFE; }
+  .store-row .loja{ font-weight:700; font-size:13px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; padding-right:64px; }
+  .store-row .meta{ font-size:11.5px; color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .store-row .qtd{ position:absolute; top:9px; right:10px; font-size:11px; font-weight:800; color:var(--navy); background:var(--surface-2); border:1px solid var(--line-soft); border-radius:99px; padding:1px 8px; font-variant-numeric:tabular-nums; }
+  .badges{ display:flex; flex-wrap:wrap; gap:4px; margin-top:4px; }
+  .badge{ font-size:10.5px; font-weight:700; border-radius:99px; padding:1px 8px; white-space:nowrap; max-width:100%; overflow:hidden; text-overflow:ellipsis; }
+  .badge.rot{ background:var(--navy); color:#fff; }
+  .badge.fora{ background:var(--surface-2); color:var(--muted); border:1px solid var(--line); }
+  .badge.semmix{ background:#FFF3D6; color:#8A6100; border:1px solid #F0D58C; }
+  .badge.pend{ background:var(--pink); color:#fff; }
+  .badge.grav{ background:var(--success-soft); color:var(--success); border:1px solid #B7E0C8; }
+  .badge.inat{ background:var(--danger-soft); color:var(--danger); }
+  .list-more{ text-align:center; color:var(--muted); font-size:12px; padding:10px 0; }
+  .empty-state{ color:var(--muted); font-size:13px; padding:30px 10px; text-align:center; }
+
+  .det-head h2{ margin:0 0 2px; font-size:18px; font-weight:800; }
+  .det-head .meta{ font-size:12.5px; color:var(--muted); }
+  .det-head .promo{ font-size:12.5px; margin-top:4px; }
+  .det-head .promo b{ font-weight:700; }
+  .det-tools{ display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin:14px 0 6px; }
+  .det-tools .filter-input{ border:1px solid var(--line); max-width:240px; }
+  .brand-chip{ font-size:11.5px; padding:4px 10px; border-radius:99px; border:1px solid var(--line); background:var(--surface); color:var(--muted); cursor:pointer; font-weight:600; }
+  .brand-chip.active{ background:var(--navy); border-color:var(--navy); color:#fff; }
+  .det-sum{ display:flex; flex-wrap:wrap; gap:6px 14px; font-size:12.5px; color:var(--muted); margin:6px 0 4px; }
+  .det-sum b{ color:var(--ink); }
+  .det-sum .add{ color:var(--success); font-weight:700; }
+  .det-sum .rem{ color:var(--danger); font-weight:700; }
+  .det-actions{ display:flex; flex-wrap:wrap; gap:8px; margin:10px 0 4px; }
+
+  .group-head{ display:flex; align-items:center; justify-content:space-between; gap:8px; margin:18px 0 6px; padding-bottom:6px; border-bottom:2px solid var(--pink); font-size:12.5px; font-weight:800; letter-spacing:.02em; color:var(--navy); }
+  .group-head .count{ font-size:11.5px; color:var(--muted); font-weight:500; margin-left:6px; }
+  .group-head .gbtns{ display:flex; gap:4px; }
+  .sku-grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(300px,1fr)); gap:4px 10px; }
+  .sku{ display:flex; align-items:center; gap:8px; padding:5px 8px; border-radius:7px; cursor:pointer; font-size:12.5px; border:1px solid transparent; }
+  .sku:hover{ background:var(--surface-2); }
+  .sku input{ width:16px; height:16px; accent-color:var(--pink); flex:0 0 auto; margin:0; }
+  .sku .d{ flex:1; min-width:0; }
+  .sku .c{ font-size:10.5px; color:var(--muted); font-variant-numeric:tabular-nums; }
+  .sku.add{ background:var(--success-soft); border-color:#B7E0C8; }
+  .sku.rem{ background:var(--danger-soft); border-color:#F1C2C4; }
+  .sku.rem .d{ text-decoration:line-through; color:var(--danger); }
+  .sku .flag{ font-size:10px; font-weight:800; flex:0 0 auto; }
+  .sku.add .flag{ color:var(--success); }
+  .sku.rem .flag{ color:var(--danger); }
+  .sku[aria-disabled="true"]{ cursor:default; }
+
+  .bulk-row{ display:grid; grid-template-columns:minmax(0,1fr) auto auto; gap:8px; align-items:center; padding:6px 8px; border-bottom:1px solid var(--line-soft); font-size:12.5px; }
+  .bulk-row .em{ font-size:11.5px; color:var(--muted); font-variant-numeric:tabular-nums; white-space:nowrap; }
+  .bulk-row .bb{ display:flex; gap:4px; }
+  .bar{ height:5px; border-radius:4px; background:var(--line-soft); overflow:hidden; margin-top:3px; }
+  .bar > i{ display:block; height:100%; background:var(--pink); }
+
+  .modal-overlay{ position:fixed; inset:0; background:rgba(32,36,76,0.5); display:flex; align-items:center; justify-content:center; z-index:1000; padding:20px; }
+  .modal-box{ background:var(--surface); border:1px solid var(--line); border-radius:12px; box-shadow:var(--shadow); padding:20px; max-width:420px; width:100%; }
+  .modal-box p{ margin:0 0 14px; font-size:13.5px; line-height:1.5; }
+  .modal-box input{ width:100%; padding:8px 10px; border:1px solid var(--line); border-radius:8px; font:inherit; margin-bottom:6px; }
+  .modal-box .err{ color:var(--danger); font-size:12px; min-height:1em; margin-bottom:8px; }
+  .modal-actions{ display:flex; justify-content:flex-end; gap:8px; }
+
+  @media (max-width: 1100px){ .cols{ grid-template-columns:1fr; } #storeList{ max-height:420px; } }
+  @media (max-width: 860px){
+    .testeira{ height:60px; padding:0 16px; }
+    .testeira::before{ clip-path:polygon(0 0, 62% 0, 56% 100%, 0 100%); }
+    .testeira .logo-spot{ height:18px; } .testeira .logo-essity{ height:30px; } .testeira .titulo{ display:none; }
+    #app.show{ flex-direction:column; padding:16px; gap:16px; align-items:stretch; }
+    #sidebar{ width:auto; max-height:none; position:static; border-radius:16px; }
+    .sku-grid{ grid-template-columns:1fr; }
+  }
+</style>
+</head>
+<body>
+
+<header class="testeira">
+  <img class="logo-spot" src="img/logo_spot.png" alt="SPOT">
+  <span class="titulo">Mix de Lojas</span>
+  <img class="logo-essity" src="img/logo_essity.png" alt="Essity">
+</header>
+
+<div id="bootScreen" style="min-height:60vh;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:13px;padding:16px;text-align:center;">Carregando base de lojas e produtos…</div>
+
+<div id="app">
+  <aside id="sidebar">
+    <div class="side-title"><b>Atualização de mix</b><span id="cicloLabel"></span></div>
+    <div class="side-sep"></div>
+    <div>
+      <label for="exSelect" class="eyebrow">Executivo</label>
+      <select id="exSelect"></select>
+    </div>
+
+    <div class="stat-block">
+      <div class="stat-row"><span>Lojas na carteira</span><span class="n" id="stTotal">0</span></div>
+      <div class="stat-row"><span>No roteiro</span><span class="n" id="stRot">0</span></div>
+      <div class="stat-row"><span>Com mix cadastrado</span><span class="n" id="stMix">0</span></div>
+      <div class="stat-row"><span>Gravadas neste ciclo</span><span class="n ok" id="stGrav">0</span></div>
+      <div class="stat-row"><span>Alteradas sem gravar</span><span class="n pend" id="stPend">0</span></div>
+    </div>
+    <div class="side-sep"></div>
+
+    <div>
+      <label for="fBusca" class="eyebrow" style="display:block;margin-bottom:4px;">Buscar loja</label>
+      <input id="fBusca" class="filter-input" type="search" placeholder="Nome, código, cidade, bairro…">
+    </div>
+    <div>
+      <label for="fRede" class="eyebrow" style="display:block;margin-bottom:4px;">Rede</label>
+      <select class="filter-select" id="fRede"></select>
+    </div>
+    <div>
+      <label for="fUf" class="eyebrow" style="display:block;margin-bottom:4px;">UF</label>
+      <select class="filter-select" id="fUf"></select>
+    </div>
+    <div>
+      <label for="fCidade" class="eyebrow" style="display:block;margin-bottom:4px;">Cidade</label>
+      <select class="filter-select" id="fCidade"></select>
+    </div>
+    <div>
+      <div class="eyebrow" style="margin-bottom:4px;">Roteiro</div>
+      <div class="chips" id="fRot"></div>
+    </div>
+    <div>
+      <div class="eyebrow" style="margin-bottom:4px;">Situação</div>
+      <div class="chips" id="fSit"></div>
+    </div>
+
+    <div class="side-actions">
+      <button class="btn primary" id="btnGravar">Gravar alterações</button>
+      <div class="side-hint" id="syncHint"></div>
+      <button class="btn ghost small" id="btnDescartar">Descartar alterações não gravadas</button>
+      <button class="btn ghost small" id="btnExportar">Exportar mix da carteira (Excel)</button>
+    </div>
+  </aside>
+
+  <main id="main">
+    <div class="topbar">
+      <div>
+        <div class="eyebrow">Mix de produtos por loja</div>
+        <h1 id="title">—</h1>
+        <div class="sub">Marque os SKUs <b>Essity</b> (Biofral, Tena, Libresse e Pequenin) que cada loja deve ter. Os <b>concorrentes</b> entram sozinhos no arquivo final, conforme a categoria dos SKUs Essity marcados.</div>
+        <div class="note" id="baseNote"></div>
+      </div>
+    </div>
+
+    <div class="cols">
+      <section class="panel">
+        <span class="tag">Lojas</span>
+        <div class="panel-body">
+          <div class="list-head">
+            <span class="count" id="listCount"></span>
+            <button class="btn small" id="btnMassa" title="Adicionar ou remover SKUs em todas as lojas filtradas">⚡ Edição em massa</button>
+          </div>
+          <div id="storeList"></div>
+        </div>
+      </section>
+      <section class="panel">
+        <span class="tag" id="detTag">Mix da loja</span>
+        <div class="panel-body" id="detail"></div>
+      </section>
+    </div>
+  </main>
+</div>
+
+<iframe name="syncFrame" id="syncFrame" style="display:none;"></iframe>
+
+<script>
+(function(){
+  /* ===== Configuração: links da planilha Google (preencher depois de criar a planilha) ===== */
+  var SYNC_URL       = "COLE_AQUI_URL_EXEC";        // Apps Script → URL que termina em /exec
+  var MIX_CSV_URL    = "COLE_AQUI_CSV_MIX";         // aba Mix publicada como CSV
+  var STATUS_CSV_URL = "COLE_AQUI_CSV_STATUS";      // aba Status publicada como CSV
+
+  var DATA_URL = "mix_dados.json";
+  var LS = "mixessity_";
+  var LIST_MAX = 300;
+  var MARCAS = ["BIOFRAL","TENA","LIBRESSE","PEQUENIN"];
+  var SEM_EXEC = "(SEM EXECUTIVO)";
+
+  var CICLO = "", DADOS = null;
+  var LOJAS = [], LOJA_BY = {}, SKUS = [], SKU_BY = {}, CATS = [];
+  var BASE = {}, REMOTE = {}, DRAFT = {};
+  var st = { ex:"", sel:null, mode:"loja", busca:"", rede:"", uf:"", cidade:"", rot:"todas", sit:"todas", marca:"", skuBusca:"", soMarcados:false };
+
+  function $(id){ return document.getElementById(id); }
+  function esc(s){ return String(s==null?"":s).replace(/[&<>"']/g, function(c){ return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]; }); }
+  function fold(s){ return String(s||"").normalize("NFD").replace(/[̀-ͯ]/g,"").toUpperCase(); }
+  function lsGet(k, def){ try { var v = localStorage.getItem(LS+k); return v==null ? def : JSON.parse(v); } catch(e){ return def; } }
+  function lsSet(k, v){ try { localStorage.setItem(LS+k, JSON.stringify(v)); } catch(e){} }
+  function configurado(u){ return u && u.indexOf("COLE_AQUI") !== 0; }
+  function bust(u){ return u + (u.indexOf("?")>-1 ? "&" : "?") + "_=" + Date.now(); }
+  function fmtData(iso){
+    var d = new Date(iso); if (isNaN(d)) return iso || "";
+    function p(n){ return n<10 ? "0"+n : ""+n; }
+    return p(d.getDate())+"/"+p(d.getMonth()+1)+" "+p(d.getHours())+":"+p(d.getMinutes());
+  }
+  function fmtCiclo(c){ var p = String(c).split("-"); return p.length===3 ? p[2]+"/"+p[1]+"/"+p[0] : c; }
+
+  /* ===== mix: base (publicado) → gravado (planilha) → rascunho (este navegador) ===== */
+  function key(a){ return (a||[]).slice().sort(function(x,y){ return x-y; }).join(","); }
+  function savedOf(c){ return REMOTE[c] ? REMOTE[c].skus : (BASE[c] || []); }
+  function curOf(c){ return DRAFT[c] || savedOf(c); }
+  function isDirty(c){ return !!DRAFT[c] && key(DRAFT[c]) !== key(savedOf(c)); }
+  function setCur(c, arr){
+    var uniq = {}; arr.forEach(function(s){ uniq[s] = 1; });
+    var lista = Object.keys(uniq).map(Number).sort(function(x,y){ return x-y; });
+    if (key(lista) === key(savedOf(c))) delete DRAFT[c]; else DRAFT[c] = lista;
+  }
+  function saveDraft(){ lsSet("draft_v1", { ciclo: CICLO, lojas: DRAFT }); }
+  function loadDraft(){
+    var d = lsGet("draft_v1", null);
+    DRAFT = (d && d.ciclo === CICLO && d.lojas) ? d.lojas : {};
+  }
+
+  /* ===== carteira e filtros ===== */
+  function carteira(){ return LOJAS.filter(function(l){ return l.executivo === st.ex; }); }
+  function passa(l, ate){
+    if (ate > 0 && st.rede && l.rede !== st.rede) return false;
+    if (ate > 1 && st.uf && l.uf !== st.uf) return false;
+    if (ate > 2 && st.cidade && l.cidade !== st.cidade) return false;
+    return true;
+  }
+  function filtradas(){
+    var b = fold(st.busca).trim();
+    return carteira().filter(function(l){
+      if (!passa(l, 3)) return false;
+      if (st.rot === "rot" && !l.promotores) return false;
+      if (st.rot === "fora" && l.promotores) return false;
+      if (st.sit === "commix" && !curOf(l.cod).length) return false;
+      if (st.sit === "semmix" && curOf(l.cod).length) return false;
+      if (st.sit === "pend" && !isDirty(l.cod)) return false;
+      if (st.sit === "grav" && !REMOTE[l.cod]) return false;
+      if (b && l._busca.indexOf(b) === -1) return false;
+      return true;
+    });
+  }
+  function opcoes(sel, valores, atual, rotuloTodos){
+    var html = '<option value="">'+rotuloTodos+'</option>';
+    valores.forEach(function(v){ html += '<option value="'+esc(v)+'"'+(v===atual?' selected':'')+'>'+esc(v)+'</option>'; });
+    sel.innerHTML = html;
+  }
+  function uniq(arr){ var o = {}; arr.forEach(function(v){ if (v) o[v] = 1; }); return Object.keys(o).sort(); }
+
+  /* ===== render ===== */
+  function renderSidebar(){
+    var cart = carteira();
+    $("stTotal").textContent = cart.length;
+    $("stRot").textContent = cart.filter(function(l){ return l.promotores; }).length;
+    $("stMix").textContent = cart.filter(function(l){ return curOf(l.cod).length; }).length;
+    $("stGrav").textContent = cart.filter(function(l){ return REMOTE[l.cod]; }).length;
+    var pend = cart.filter(function(l){ return isDirty(l.cod); }).length;
+    $("stPend").textContent = pend;
+    $("btnGravar").textContent = pend ? "Gravar alterações ("+pend+" lojas)" : "Gravar alterações";
+    $("btnGravar").disabled = !pend;
+    $("btnDescartar").disabled = !pend;
+
+    if (st.rede && cart.filter(function(l){ return l.rede===st.rede; }).length===0) st.rede = "";
+    opcoes($("fRede"), uniq(cart.map(function(l){ return l.rede; })), st.rede, "Todas as redes");
+    var c1 = cart.filter(function(l){ return passa(l,1); });
+    if (st.uf && c1.filter(function(l){ return l.uf===st.uf; }).length===0) st.uf = "";
+    opcoes($("fUf"), uniq(c1.map(function(l){ return l.uf; })), st.uf, "Todas as UFs");
+    var c2 = cart.filter(function(l){ return passa(l,2); });
+    if (st.cidade && c2.filter(function(l){ return l.cidade===st.cidade; }).length===0) st.cidade = "";
+    opcoes($("fCidade"), uniq(c2.map(function(l){ return l.cidade; })), st.cidade, "Todas as cidades");
+
+    chips($("fRot"), [["todas","Todas"],["rot","No roteiro"],["fora","Fora do roteiro"]], "rot");
+    chips($("fSit"), [["todas","Todas"],["commix","Com mix"],["semmix","Sem mix"],["pend","Alteradas"],["grav","Gravadas"]], "sit");
+  }
+  function chips(box, itens, campo){
+    box.innerHTML = itens.map(function(it){
+      return '<button type="button" class="chip-filter'+(st[campo]===it[0]?' active':'')+'" data-v="'+it[0]+'">'+it[1]+'</button>';
+    }).join("");
+    Array.prototype.forEach.call(box.children, function(b){
+      b.onclick = function(){ st[campo] = b.getAttribute("data-v"); renderAll(); };
+    });
+  }
+
+  function badgesHtml(l){
+    var h = "";
+    if (l.promotores) h += '<span class="badge rot" title="'+esc(l.promotores)+'">No roteiro · '+esc(l.promotores)+'</span>';
+    else h += '<span class="badge fora">Fora do roteiro</span>';
+    if (!curOf(l.cod).length) h += '<span class="badge semmix">Sem mix Essity</span>';
+    if (isDirty(l.cod)) h += '<span class="badge pend">Alterada · não gravada</span>';
+    else if (REMOTE[l.cod]) h += '<span class="badge grav">Gravada '+esc(fmtData(REMOTE[l.cod].em))+'</span>';
+    if (l.status) h += '<span class="badge inat">'+esc(l.status)+'</span>';
+    return h;
+  }
+
+  function renderList(){
+    var lista = filtradas();
+    var total = carteira().length;
+    $("listCount").textContent = lista.length === total ? total+" lojas" : lista.length+" de "+total+" lojas (filtradas)";
+    $("btnMassa").disabled = !lista.length;
+    $("btnMassa").className = "btn small" + (st.mode==="massa" ? " primary" : "");
+    if (!lista.length){
+      $("storeList").innerHTML = '<div class="empty-state">Nenhuma loja com esses filtros.</div>';
+      return;
+    }
+    var html = lista.slice(0, LIST_MAX).map(function(l){
+      return '<button type="button" class="store-row'+(st.mode==="loja" && st.sel===l.cod?' sel':'')+'" data-c="'+l.cod+'">'+
+        '<span class="qtd" title="SKUs Essity marcados">'+curOf(l.cod).length+'</span>'+
+        '<div class="loja">'+esc(l.nome || ("Loja "+l.cod))+'</div>'+
+        '<div class="meta">Cód. '+l.cod+' · '+esc(l.bandeira)+' · '+esc(l.cidade)+(l.uf?'/'+esc(l.uf):'')+(l.bairro?' · '+esc(l.bairro):'')+'</div>'+
+        '<div class="badges">'+badgesHtml(l)+'</div></button>';
+    }).join("");
+    if (lista.length > LIST_MAX) html += '<div class="list-more">Mostrando '+LIST_MAX+' de '+lista.length+' lojas. Use a busca ou os filtros para achar as demais.</div>';
+    $("storeList").innerHTML = html;
+    Array.prototype.forEach.call($("storeList").querySelectorAll(".store-row"), function(b){
+      b.onclick = function(){ st.sel = Number(b.getAttribute("data-c")); st.mode = "loja"; renderList(); renderDetail(); };
+    });
+  }
+
+  function skusVisiveis(marcados){
+    var b = fold(st.skuBusca).trim();
+    return SKUS.filter(function(s){
+      if (st.marca && s.marca !== st.marca) return false;
+      if (b && fold(s.desc+" "+s.cod).indexOf(b) === -1) return false;
+      if (marcados && st.soMarcados && !marcados[s.cod]) return false;
+      return true;
+    });
+  }
+  function toolsHtml(comSoMarcados){
+    var h = '<div class="det-tools">';
+    h += '<button type="button" class="brand-chip'+(st.marca===""?' active':'')+'" data-m="">Todas as marcas</button>';
+    MARCAS.forEach(function(m){ h += '<button type="button" class="brand-chip'+(st.marca===m?' active':'')+'" data-m="'+m+'">'+m.charAt(0)+m.slice(1).toLowerCase()+'</button>'; });
+    h += '<input type="search" class="filter-input" id="skuBusca" placeholder="Buscar SKU…" value="'+esc(st.skuBusca)+'">';
+    if (comSoMarcados) h += '<label style="font-size:12.5px;display:inline-flex;gap:6px;align-items:center;cursor:pointer;"><input type="checkbox" id="soMarc"'+(st.soMarcados?' checked':'')+'> Só marcados</label>';
+    return h + '</div>';
+  }
+  function bindTools(){
+    Array.prototype.forEach.call($("detail").querySelectorAll(".brand-chip"), function(b){
+      b.onclick = function(){ st.marca = b.getAttribute("data-m"); renderDetail(); };
+    });
+    var inp = $("skuBusca"), t;
+    if (inp) inp.oninput = function(){ clearTimeout(t); t = setTimeout(function(){ st.skuBusca = inp.value; renderDetail(true); }, 200); };
+    var sm = $("soMarc");
+    if (sm) sm.onchange = function(){ st.soMarcados = sm.checked; renderDetail(); };
+  }
+  function grupos(lista){
+    var out = [], idx = {};
+    lista.forEach(function(s){
+      if (idx[s.cat] == null){ idx[s.cat] = out.length; out.push({ cat:s.cat, skus:[] }); }
+      out[idx[s.cat]].skus.push(s);
+    });
+    return out;
+  }
+
+  function renderDetail(manterFoco){
+    $("detTag").textContent = st.mode === "massa" ? "Edição em massa" : "Mix da loja";
+    if (st.mode === "massa") return renderMassa(manterFoco);
+    var l = LOJA_BY[st.sel];
+    if (!l || l.executivo !== st.ex){
+      $("detail").innerHTML = '<div class="empty-state">Escolha uma loja na lista ao lado para ver e editar o mix.</div>';
+      return;
+    }
+    var atual = {}, gravado = {};
+    curOf(l.cod).forEach(function(s){ atual[s] = 1; });
+    savedOf(l.cod).forEach(function(s){ gravado[s] = 1; });
+    var add = Object.keys(atual).filter(function(s){ return !gravado[s]; }).length;
+    var rem = Object.keys(gravado).filter(function(s){ return !atual[s] && SKU_BY[s]; }).length;
+    var nf = filtradas().length;
+
+    var h = '<div class="det-head"><h2>'+esc(l.nome || ("Loja "+l.cod))+'</h2>'+
+      '<div class="meta">Cód. '+l.cod+' · '+esc(l.bandeira)+' ('+esc(l.rede)+') · '+esc(l.bairro)+' · '+esc(l.cidade)+'/'+esc(l.uf)+'</div>'+
+      '<div class="promo">'+(l.promotores ? 'No roteiro · Promotor: <b>'+esc(l.promotores)+'</b>' : '<span style="color:var(--muted)">Fora do roteiro (sem promotor)</span>')+'</div></div>';
+    h += '<div class="det-sum"><span><b>'+Object.keys(atual).length+'</b> SKUs Essity marcados</span>'+
+      (add ? '<span class="add">+'+add+' incluídos</span>' : '')+(rem ? '<span class="rem">−'+rem+' retirados</span>' : '')+
+      (isDirty(l.cod) ? '<span style="color:var(--pink);font-weight:700;">não gravado</span>' : (REMOTE[l.cod] ? '<span style="color:var(--success);font-weight:700;">gravado em '+esc(fmtData(REMOTE[l.cod].em))+'</span>' : ''))+'</div>';
+    h += '<div class="det-actions">'+
+      '<button type="button" class="btn small" id="btnCopiar">Copiar mix de outra loja</button>'+
+      '<button type="button" class="btn small" id="btnAplicar"'+(nf<2?' disabled':'')+'>Aplicar este mix às '+nf+' lojas filtradas</button>'+
+      (isDirty(l.cod) ? '<button type="button" class="btn small danger" id="btnDesfazer">Desfazer alterações desta loja</button>' : '')+
+      '</div>';
+    h += toolsHtml(true);
+
+    var lista = skusVisiveis(atual);
+    if (!lista.length) h += '<div class="empty-state">Nenhum SKU com esse filtro.</div>';
+    grupos(lista).forEach(function(g){
+      var marc = g.skus.filter(function(s){ return atual[s.cod]; }).length;
+      h += '<div class="group-head"><span>'+esc(g.cat)+'<span class="count">'+marc+' de '+g.skus.length+' marcados</span></span>'+
+        '<span class="gbtns"><button type="button" class="btn ghost small" data-gall="'+esc(g.cat)+'">Marcar todos</button>'+
+        '<button type="button" class="btn ghost small" data-gnone="'+esc(g.cat)+'">Desmarcar todos</button></span></div>';
+      h += '<div class="sku-grid">';
+      g.skus.forEach(function(s){
+        var on = !!atual[s.cod], era = !!gravado[s.cod];
+        var cls = on && !era ? " add" : (!on && era ? " rem" : "");
+        h += '<label class="sku'+cls+'"><input type="checkbox" data-s="'+s.cod+'"'+(on?' checked':'')+'>'+
+          '<span class="d">'+esc(s.desc)+'<br><span class="c">'+esc(s.marca)+' · cód. '+s.cod+'</span></span>'+
+          (cls===" add" ? '<span class="flag">+ NOVO</span>' : (cls===" rem" ? '<span class="flag">RETIRADO</span>' : ''))+'</label>';
+      });
+      h += '</div>';
+    });
+    $("detail").innerHTML = h;
+    bindTools();
+    if (manterFoco && $("skuBusca")){ var i = $("skuBusca"); i.focus(); i.setSelectionRange(i.value.length, i.value.length); }
+
+    Array.prototype.forEach.call($("detail").querySelectorAll("input[data-s]"), function(cb){
+      cb.onchange = function(){
+        var s = Number(cb.getAttribute("data-s")), cur = curOf(l.cod).slice();
+        if (cb.checked) cur.push(s); else cur = cur.filter(function(x){ return x !== s; });
+        mudar([l.cod], function(){ return cur; });
+      };
+    });
+    function grupoSkus(cat){ return lista.filter(function(s){ return s.cat === cat; }).map(function(s){ return s.cod; }); }
+    Array.prototype.forEach.call($("detail").querySelectorAll("[data-gall]"), function(b){
+      b.onclick = function(){ var g = grupoSkus(b.getAttribute("data-gall")); mudar([l.cod], function(c){ return curOf(c).concat(g); }); };
+    });
+    Array.prototype.forEach.call($("detail").querySelectorAll("[data-gnone]"), function(b){
+      b.onclick = function(){ var g = {}; grupoSkus(b.getAttribute("data-gnone")).forEach(function(s){ g[s]=1; }); mudar([l.cod], function(c){ return curOf(c).filter(function(s){ return !g[s]; }); }); };
+    });
+    $("btnCopiar").onclick = function(){ copiarDeOutra(l); };
+    $("btnAplicar").onclick = function(){
+      var alvo = filtradas().map(function(x){ return x.cod; }).filter(function(c){ return c !== l.cod; });
+      var mixAqui = curOf(l.cod).slice();
+      confirmar("Substituir o mix Essity de <b>"+alvo.length+" lojas</b> filtradas pelo mix desta loja ("+mixAqui.length+" SKUs)?<br><br>Você ainda poderá revisar antes de gravar.", function(){
+        mudar(alvo, function(){ return mixAqui; });
+      });
+    };
+    if ($("btnDesfazer")) $("btnDesfazer").onclick = function(){ delete DRAFT[l.cod]; saveDraft(); renderAll(); };
+  }
+
+  function renderMassa(manterFoco){
+    var lista = filtradas();
+    var n = lista.length;
+    var h = '<div class="det-head"><h2>Edição em massa</h2>'+
+      '<div class="meta">As ações abaixo valem para as <b>'+n+' lojas filtradas</b> na lista ao lado. Ajuste os filtros (rede, UF, cidade, roteiro, busca) antes de aplicar.</div></div>';
+    h += '<div class="det-actions"><button type="button" class="btn small" id="btnSairMassa">← Voltar para a loja</button></div>';
+    h += toolsHtml(false);
+    var conta = {};
+    lista.forEach(function(l){ curOf(l.cod).forEach(function(s){ conta[s] = (conta[s]||0) + 1; }); });
+    var vis = skusVisiveis(null);
+    grupos(vis).forEach(function(g){
+      h += '<div class="group-head"><span>'+esc(g.cat)+'</span></div>';
+      g.skus.forEach(function(s){
+        var c = conta[s.cod] || 0, pct = n ? Math.round(c*100/n) : 0;
+        h += '<div class="bulk-row"><div><div>'+esc(s.desc)+' <span class="c" style="color:var(--muted);font-size:10.5px;">'+esc(s.marca)+' · cód. '+s.cod+'</span></div><div class="bar"><i style="width:'+pct+'%"></i></div></div>'+
+          '<span class="em">em '+c+' de '+n+'</span>'+
+          '<span class="bb"><button type="button" class="btn small" data-add="'+s.cod+'"'+(c===n?' disabled':'')+'>+ Incluir em todas</button>'+
+          '<button type="button" class="btn small" data-rem="'+s.cod+'"'+(c===0?' disabled':'')+'>− Retirar de todas</button></span></div>';
+      });
+    });
+    $("detail").innerHTML = h;
+    bindTools();
+    if (manterFoco && $("skuBusca")){ var i = $("skuBusca"); i.focus(); i.setSelectionRange(i.value.length, i.value.length); }
+    $("btnSairMassa").onclick = function(){ st.mode = "loja"; renderList(); renderDetail(); };
+    var cods = lista.map(function(l){ return l.cod; });
+    Array.prototype.forEach.call($("detail").querySelectorAll("[data-add]"), function(b){
+      b.onclick = function(){
+        var s = Number(b.getAttribute("data-add"));
+        confirmar("Incluir <b>"+esc(SKU_BY[s].desc)+"</b> em <b>"+(n-(conta[s]||0))+" lojas</b> que ainda não têm?", function(){
+          mudar(cods, function(c){ return curOf(c).concat([s]); });
+        });
+      };
+    });
+    Array.prototype.forEach.call($("detail").querySelectorAll("[data-rem]"), function(b){
+      b.onclick = function(){
+        var s = Number(b.getAttribute("data-rem"));
+        confirmar("Retirar <b>"+esc(SKU_BY[s].desc)+"</b> de <b>"+(conta[s]||0)+" lojas</b>?", function(){
+          mudar(cods, function(c){ return curOf(c).filter(function(x){ return x !== s; }); });
+        });
+      };
+    });
+  }
+
+  function mudar(cods, fn){
+    cods.forEach(function(c){ setCur(c, fn(c)); });
+    saveDraft();
+    setHint("", "");
+    renderAll();
+  }
+
+  function renderAll(){
+    $("title").textContent = st.ex || "—";
+    renderSidebar();
+    renderList();
+    renderDetail();
+  }
+
+  /* ===== modais ===== */
+  function modal(html, onOk, okTxt){
+    var ov = document.createElement("div");
+    ov.className = "modal-overlay";
+    ov.innerHTML = '<div class="modal-box">'+html+'<div class="modal-actions"><button class="btn ghost" data-x>Cancelar</button><button class="btn primary" data-ok>'+(okTxt||"Confirmar")+'</button></div></div>';
+    document.body.appendChild(ov);
+    function fechar(){ document.body.removeChild(ov); }
+    ov.querySelector("[data-x]").onclick = fechar;
+    ov.onclick = function(e){ if (e.target === ov) fechar(); };
+    ov.querySelector("[data-ok]").onclick = function(){ if (onOk(ov) !== false) fechar(); };
+    var inp = ov.querySelector("input"); if (inp) inp.focus(); else ov.querySelector("[data-ok]").focus();
+    return ov;
+  }
+  function confirmar(msg, fn){ modal("<p>"+msg+"</p>", function(){ fn(); }); }
+  function copiarDeOutra(l){
+    modal('<p>Copiar o mix Essity de outra loja para <b>'+esc(l.nome)+'</b>.<br>Digite o código da loja de origem:</p><input type="number" id="codOrigem" placeholder="Ex.: 1132"><div class="err" id="codErr"></div>', function(ov){
+      var c = Number(ov.querySelector("#codOrigem").value);
+      var o = LOJA_BY[c];
+      if (!o){ ov.querySelector("#codErr").textContent = "Loja não encontrada."; return false; }
+      var m = curOf(c).slice();
+      if (!m.length){ ov.querySelector("#codErr").textContent = "A loja "+c+" ("+o.nome+") não tem SKUs Essity no mix."; return false; }
+      mudar([l.cod], function(){ return m; });
+    }, "Copiar");
+  }
+
+  /* ===== gravação na planilha ===== */
+  function setHint(txt, cls){ var e = $("syncHint"); e.textContent = txt; e.className = "side-hint" + (cls ? " "+cls : ""); }
+
+  function gravar(){
+    var pend = carteira().filter(function(l){ return isDirty(l.cod); });
+    if (!pend.length) return;
+    if (!configurado(SYNC_URL)){
+      setHint("A planilha ainda não foi configurada. As alterações ficam salvas só neste navegador.", "err");
+      return;
+    }
+    var payload = {
+      executivo: st.ex, ciclo: CICLO, totalLojas: carteira().length,
+      lojas: pend.map(function(l){ return { cod: l.cod, loja: l.nome, skus: key(curOf(l.cod)) }; })
+    };
+    $("btnGravar").disabled = true;
+    setHint("Gravando "+pend.length+" lojas…", "");
+    var form = document.createElement("form");
+    form.method = "POST"; form.action = SYNC_URL; form.target = "syncFrame"; form.style.display = "none";
+    var inp = document.createElement("input"); inp.type = "hidden"; inp.name = "payload"; inp.value = JSON.stringify(payload);
+    form.appendChild(inp); document.body.appendChild(form); form.submit(); document.body.removeChild(form);
+    var agora = new Date().toISOString();
+    setTimeout(function(){
+      confirmarGravacao(0).then(function(){
+        payload.lojas.forEach(function(x){
+          REMOTE[x.cod] = { skus: x.skus ? x.skus.split(",").map(Number) : [], em: agora, ex: st.ex };
+          delete DRAFT[x.cod];
+        });
+        lsSet("remote_v1", { ciclo: CICLO, lojas: REMOTE });
+        saveDraft();
+        renderAll();
+        setHint("✓ "+payload.lojas.length+" lojas gravadas na planilha.", "ok");
+      }).catch(function(){
+        renderAll();
+        setHint("Não consegui confirmar a gravação. Suas alterações continuam salvas aqui: confira a internet e clique em Gravar de novo.", "err");
+      });
+    }, 1500);
+  }
+  function confirmarGravacao(tent){
+    if (!configurado(STATUS_CSV_URL)) return Promise.resolve(true);
+    return fetch(bust(STATUS_CSV_URL), { cache:"no-store" }).then(function(r){ return r.text(); }).then(function(t){
+      var rows = parseCsv(t), h = rows[0] || [], ix = {};
+      h.forEach(function(c,i){ ix[c.trim().toUpperCase()] = i; });
+      for (var i=1;i<rows.length;i++){
+        if (rows[i][ix.EXECUTIVO] !== st.ex || rows[i][ix.CICLO] !== CICLO) continue;
+        var tm = new Date(rows[i][ix.GRAVADO_EM]).getTime();
+        if (!isNaN(tm) && Date.now() - tm < 120000) return true;
+      }
+      throw new Error("nao confirmado");
+    }).catch(function(){
+      if (tent >= 6) throw new Error("falhou");
+      return new Promise(function(r){ setTimeout(r, 2000); }).then(function(){ return confirmarGravacao(tent+1); });
+    });
+  }
+
+  function parseCsv(text){
+    var rows = [], i = 0, f = "", row = [], q = false;
+    text = (text||"").replace(/\r\n/g,"\n").replace(/^﻿/,"");
+    while (i < text.length){
+      var c = text[i];
+      if (q){ if (c === '"'){ if (text[i+1] === '"'){ f += '"'; i += 2; continue; } q = false; i++; continue; } f += c; i++; continue; }
+      if (c === '"'){ q = true; i++; continue; }
+      if (c === ','){ row.push(f); f = ""; i++; continue; }
+      if (c === '\n'){ row.push(f); rows.push(row); row = []; f = ""; i++; continue; }
+      f += c; i++;
+    }
+    if (f.length || row.length){ row.push(f); rows.push(row); }
+    return rows.filter(function(r){ return r.length > 1 || (r[0]||"").trim(); });
+  }
+
+  function carregarRemoto(){
+    var cache = lsGet("remote_v1", null);
+    if (cache && cache.ciclo === CICLO) REMOTE = cache.lojas || {};
+    if (!configurado(MIX_CSV_URL)) return Promise.resolve();
+    return fetch(bust(MIX_CSV_URL), { cache:"no-store" }).then(function(r){ return r.text(); }).then(function(t){
+      var rows = parseCsv(t), h = rows[0] || [], ix = {};
+      h.forEach(function(c,i){ ix[c.trim().toUpperCase()] = i; });
+      if (ix.COD_LOJA == null) return;
+      for (var i=1;i<rows.length;i++){
+        var r = rows[i];
+        if (r[ix.CICLO] !== CICLO) continue;
+        var c = Number(r[ix.COD_LOJA]), em = r[ix.GRAVADO_EM] || "";
+        // mantém a versão mais nova entre a planilha e o que este navegador acabou de gravar
+        if (REMOTE[c] && REMOTE[c].em > em) continue;
+        var s = (r[ix.SKUS]||"").trim();
+        REMOTE[c] = { skus: s ? s.split(",").map(Number) : [], em: em, ex: r[ix.EXECUTIVO] };
+      }
+      lsSet("remote_v1", { ciclo: CICLO, lojas: REMOTE });
+    }).catch(function(){ /* sem internet / planilha fora: segue com o cache */ });
+  }
+
+  /* ===== exportar ===== */
+  function exportar(){
+    var linhas = [["COD_LOJA","LOJA","BANDEIRA","REDE","CIDADE","UF","NO_ROTEIRO","PROMOTOR","COD_SKU","SKU","MARCA","CATEGORIA_SEGMENTO","SITUACAO"]];
+    carteira().forEach(function(l){
+      var sit = isDirty(l.cod) ? "ALTERADA - NAO GRAVADA" : (REMOTE[l.cod] ? "GRAVADA" : "MIX ATUAL");
+      var m = curOf(l.cod);
+      if (!m.length) linhas.push([l.cod,l.nome,l.bandeira,l.rede,l.cidade,l.uf,l.promotores?"SIM":"NAO",l.promotores,"","","","",sit+" (SEM MIX ESSITY)"]);
+      m.forEach(function(s){
+        var k = SKU_BY[s] || { desc:"", marca:"", cat:"" };
+        linhas.push([l.cod,l.nome,l.bandeira,l.rede,l.cidade,l.uf,l.promotores?"SIM":"NAO",l.promotores,s,k.desc,k.marca,k.cat,sit]);
+      });
+    });
+    var csv = "﻿" + linhas.map(function(r){ return r.map(function(v){ v = String(v==null?"":v); return /[;"\n]/.test(v) ? '"'+v.replace(/"/g,'""')+'"' : v; }).join(";"); }).join("\r\n");
+    var a = document.createElement("a");
+    a.href = URL.createObjectURL(new Blob([csv], { type:"text/csv;charset=utf-8" }));
+    a.download = "mix_"+fold(st.ex).replace(/[^A-Z0-9]+/g,"_")+"_"+CICLO+".csv";
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  }
+
+  /* ===== inicialização ===== */
+  function montar(d){
+    DADOS = d; CICLO = d.ciclo;
+    LOJAS = d.lojas.map(function(r){
+      var l = {}; d.colsLoja.forEach(function(c,i){ l[c] = r[i]; });
+      l._busca = fold([l.cod, l.nome, l.bandeira, l.rede, l.cidade, l.bairro, l.promotores].join(" "));
+      LOJA_BY[l.cod] = l; return l;
+    });
+    SKUS = d.skus.map(function(r){ var s = {}; d.colsSku.forEach(function(c,i){ s[c] = r[i]; }); SKU_BY[s.cod] = s; return s; });
+    Object.keys(d.mix).forEach(function(c){ BASE[c] = d.mix[c]; });
+    $("cicloLabel").textContent = "Base de "+fmtCiclo(CICLO);
+    $("baseNote").textContent = "Mix atual de "+d.geradoEm+" · "+SKUS.length+" SKUs Essity ativos";
+
+    var exs = {};
+    LOJAS.forEach(function(l){ exs[l.executivo] = (exs[l.executivo]||0) + 1; });
+    var nomes = Object.keys(exs).filter(function(e){ return e !== SEM_EXEC; }).sort();
+    if (exs[SEM_EXEC]) nomes.push(SEM_EXEC);
+    $("exSelect").innerHTML = '<option value="">Selecione…</option>' + nomes.map(function(e){ return '<option value="'+esc(e)+'">'+esc(e)+' ('+exs[e]+')</option>'; }).join("");
+    var salvo = lsGet("executivo_v1", "");
+    if (salvo && exs[salvo]){ st.ex = salvo; $("exSelect").value = salvo; }
+
+    $("exSelect").onchange = function(){
+      st.ex = this.value; st.sel = null; st.mode = "loja"; st.rede = st.uf = st.cidade = st.busca = ""; st.rot = st.sit = "todas"; $("fBusca").value = "";
+      lsSet("executivo_v1", st.ex); setHint("", ""); renderAll();
+    };
+    $("fRede").onchange = function(){ st.rede = this.value; renderAll(); };
+    $("fUf").onchange = function(){ st.uf = this.value; renderAll(); };
+    $("fCidade").onchange = function(){ st.cidade = this.value; renderAll(); };
+    var t; $("fBusca").oninput = function(){ var v = this.value; clearTimeout(t); t = setTimeout(function(){ st.busca = v; renderSidebar(); renderList(); if (st.mode==="massa") renderDetail(); }, 200); };
+    $("btnMassa").onclick = function(){ st.mode = st.mode === "massa" ? "loja" : "massa"; renderList(); renderDetail(); };
+    $("btnGravar").onclick = gravar;
+    $("btnDescartar").onclick = function(){
+      var pend = carteira().filter(function(l){ return isDirty(l.cod); });
+      confirmar("Descartar as alterações não gravadas de <b>"+pend.length+" lojas</b>? Elas voltam para o mix gravado.", function(){
+        pend.forEach(function(l){ delete DRAFT[l.cod]; }); saveDraft(); renderAll();
+      });
+    };
+    $("btnExportar").onclick = exportar;
+    window.addEventListener("beforeunload", function(e){
+      if (Object.keys(DRAFT).length){ e.preventDefault(); e.returnValue = ""; }
+    });
+  }
+
+  function boot(){
+    Promise.all([
+      fetch(bust(DATA_URL), { cache:"no-store" }).then(function(r){ if (!r.ok) throw new Error("HTTP "+r.status); return r.json(); })
+    ]).then(function(res){
+      montar(res[0]);
+      loadDraft();
+      return carregarRemoto();
+    }).then(function(){
+      $("bootScreen").style.display = "none";
+      $("app").classList.add("show");
+      renderAll();
+    }).catch(function(err){
+      $("bootScreen").textContent = "Não consegui carregar a base (" + err.message + "). Atualize a página em alguns minutos.";
+    });
+  }
+  boot();
+})();
+</script>
+</body>
+</html>
