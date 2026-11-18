@@ -407,7 +407,7 @@
     var b = fold(st.skuBusca).trim();
     return SKUS.filter(function(s){
       if (st.marca && s.marca !== st.marca) return false;
-      if (b && fold(s.desc+" "+s.cod).indexOf(b) === -1) return false;
+      if (b && fold(s.desc+" "+s.cod+" "+(s.ean||"")).indexOf(b) === -1) return false;
       if (marcados && st.soMarcados && !marcados[s.cod]) return false;
       return true;
     });
@@ -416,7 +416,7 @@
     var h = '<div class="det-tools">';
     h += '<button type="button" class="brand-chip'+(st.marca===""?' active':'')+'" data-m="">Todas as marcas</button>';
     MARCAS.forEach(function(m){ h += '<button type="button" class="brand-chip'+(st.marca===m?' active':'')+'" data-m="'+m+'">'+m.charAt(0)+m.slice(1).toLowerCase()+'</button>'; });
-    h += '<input type="search" class="filter-input" id="skuBusca" placeholder="Buscar SKU…" value="'+esc(st.skuBusca)+'">';
+    h += '<input type="search" class="filter-input" id="skuBusca" placeholder="Buscar SKU ou EAN…" value="'+esc(st.skuBusca)+'">';
     if (comSoMarcados) h += '<label style="font-size:12.5px;display:inline-flex;gap:6px;align-items:center;cursor:pointer;"><input type="checkbox" id="soMarc"'+(st.soMarcados?' checked':'')+'> Só marcados</label>';
     return h + '</div>';
   }
@@ -478,7 +478,7 @@
         var on = !!atual[s.cod], era = !!gravado[s.cod];
         var cls = on && !era ? " add" : (!on && era ? " rem" : "");
         h += '<label class="sku'+cls+'"><input type="checkbox" data-s="'+s.cod+'"'+(on?' checked':'')+'>'+
-          '<span class="d">'+esc(s.desc)+'<br><span class="c">'+esc(s.marca)+' · cód. '+s.cod+'</span></span>'+
+          '<span class="d">'+esc(s.desc)+'<br><span class="c">'+esc(s.marca)+' · EAN '+esc(s.ean||'—')+'</span></span>'+
           (cls===" add" ? '<span class="flag">+ NOVO</span>' : (cls===" rem" ? '<span class="flag">RETIRADO</span>' : ''))+'</label>';
       });
       h += '</div>';
@@ -526,7 +526,7 @@
       h += '<div class="group-head"><span>'+esc(g.cat)+'</span></div>';
       g.skus.forEach(function(s){
         var c = conta[s.cod] || 0, pct = n ? Math.round(c*100/n) : 0;
-        h += '<div class="bulk-row"><div><div>'+esc(s.desc)+' <span class="c" style="color:var(--muted);font-size:10.5px;">'+esc(s.marca)+' · cód. '+s.cod+'</span></div><div class="bar"><i style="width:'+pct+'%"></i></div></div>'+
+        h += '<div class="bulk-row"><div><div>'+esc(s.desc)+' <span class="c" style="color:var(--muted);font-size:10.5px;">'+esc(s.marca)+' · EAN '+esc(s.ean||'—')+'</span></div><div class="bar"><i style="width:'+pct+'%"></i></div></div>'+
           '<span class="em">em '+c+' de '+n+'</span>'+
           '<span class="bb"><button type="button" class="btn small" data-add="'+s.cod+'"'+(c===n?' disabled':'')+'>+ Incluir em todas</button>'+
           '<button type="button" class="btn small" data-rem="'+s.cod+'"'+(c===0?' disabled':'')+'>− Retirar de todas</button></span></div>';
@@ -691,14 +691,14 @@
 
   /* ===== exportar ===== */
   function exportar(){
-    var linhas = [["COD_LOJA","CNPJ","LOJA","BANDEIRA","REDE","CIDADE","UF","NO_ROTEIRO","PROMOTOR","COD_SKU","SKU","MARCA","CATEGORIA_SEGMENTO","SITUACAO"]];
+    var linhas = [["COD_LOJA","CNPJ","LOJA","BANDEIRA","REDE","CIDADE","UF","NO_ROTEIRO","PROMOTOR","COD_SKU","EAN","SKU","MARCA","CATEGORIA_SEGMENTO","SITUACAO"]];
     carteira().forEach(function(l){
       var sit = isDirty(l.cod) ? "ALTERADA - NAO GRAVADA" : (REMOTE[l.cod] ? "GRAVADA" : "MIX ATUAL");
       var m = curOf(l.cod);
-      if (!m.length) linhas.push([l.cod,fmtCnpj(l),l.nome,l.bandeira,l.rede,l.cidade,l.uf,l.promotores?"SIM":"NAO",l.promotores,"","","","",sit+" (SEM MIX ESSITY)"]);
+      if (!m.length) linhas.push([l.cod,fmtCnpj(l),l.nome,l.bandeira,l.rede,l.cidade,l.uf,l.promotores?"SIM":"NAO",l.promotores,"","","","","",sit+" (SEM MIX ESSITY)"]);
       m.forEach(function(s){
-        var k = SKU_BY[s] || { desc:"", marca:"", cat:"" };
-        linhas.push([l.cod,fmtCnpj(l),l.nome,l.bandeira,l.rede,l.cidade,l.uf,l.promotores?"SIM":"NAO",l.promotores,s,k.desc,k.marca,k.cat,sit]);
+        var k = SKU_BY[s] || { desc:"", marca:"", cat:"", ean:"" };
+        linhas.push([l.cod,fmtCnpj(l),l.nome,l.bandeira,l.rede,l.cidade,l.uf,l.promotores?"SIM":"NAO",l.promotores,s,k.ean||"",k.desc,k.marca,k.cat,sit]);
       });
     });
     var csv = "﻿" + linhas.map(function(r){ return r.map(function(v){ v = String(v==null?"":v); return /[;"\n]/.test(v) ? '"'+v.replace(/"/g,'""')+'"' : v; }).join(";"); }).join("\r\n");
