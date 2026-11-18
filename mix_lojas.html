@@ -187,7 +187,7 @@
 
     <div>
       <label for="fBusca" class="eyebrow" style="display:block;margin-bottom:4px;">Buscar loja</label>
-      <input id="fBusca" class="filter-input" type="search" placeholder="Nome, código, cidade, bairro…">
+      <input id="fBusca" class="filter-input" type="search" placeholder="Nome, CNPJ, cidade, bairro…">
     </div>
     <div>
       <label for="fRede" class="eyebrow" style="display:block;margin-bottom:4px;">Rede</label>
@@ -263,7 +263,7 @@
   var SEM_EXEC = "(SEM EXECUTIVO)";
 
   var CICLO = "", DADOS = null;
-  var LOJAS = [], LOJA_BY = {}, SKUS = [], SKU_BY = {}, CATS = [];
+  var LOJAS = [], LOJA_BY = {}, CNPJ_BY = {}, SKUS = [], SKU_BY = {}, CATS = [];
   var BASE = {}, REMOTE = {}, DRAFT = {};
   var st = { ex:"", sel:null, mode:"loja", busca:"", rede:"", uf:"", cidade:"", rot:"todas", sit:"todas", marca:"", skuBusca:"", soMarcados:false };
 
@@ -278,6 +278,11 @@
     var d = new Date(iso); if (isNaN(d)) return iso || "";
     function p(n){ return n<10 ? "0"+n : ""+n; }
     return p(d.getDate())+"/"+p(d.getMonth()+1)+" "+p(d.getHours())+":"+p(d.getMinutes());
+  }
+  function fmtCnpj(l){
+    var c = String(l.cnpj || "");
+    if (c.length === 14) return c.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/, "$1.$2.$3/$4-$5");
+    return c && !/^0+$/.test(c) ? c : "CNPJ não cadastrado (cód. "+l.cod+")";
   }
   function fmtCiclo(c){ var p = String(c).split("-"); return p.length===3 ? p[2]+"/"+p[1]+"/"+p[0] : c; }
 
@@ -388,7 +393,7 @@
       return '<button type="button" class="store-row'+(st.mode==="loja" && st.sel===l.cod?' sel':'')+'" data-c="'+l.cod+'">'+
         '<span class="qtd" title="SKUs Essity marcados">'+curOf(l.cod).length+'</span>'+
         '<div class="loja">'+esc(l.nome || ("Loja "+l.cod))+'</div>'+
-        '<div class="meta">Cód. '+l.cod+' · '+esc(l.bandeira)+' · '+esc(l.cidade)+(l.uf?'/'+esc(l.uf):'')+(l.bairro?' · '+esc(l.bairro):'')+'</div>'+
+        '<div class="meta">'+esc(fmtCnpj(l))+' · '+esc(l.bandeira)+' · '+esc(l.cidade)+(l.uf?'/'+esc(l.uf):'')+(l.bairro?' · '+esc(l.bairro):'')+'</div>'+
         '<div class="badges">'+badgesHtml(l)+'</div></button>';
     }).join("");
     if (lista.length > LIST_MAX) html += '<div class="list-more">Mostrando '+LIST_MAX+' de '+lista.length+' lojas. Use a busca ou os filtros para achar as demais.</div>';
@@ -449,7 +454,7 @@
     var nf = filtradas().length;
 
     var h = '<div class="det-head"><h2>'+esc(l.nome || ("Loja "+l.cod))+'</h2>'+
-      '<div class="meta">Cód. '+l.cod+' · '+esc(l.bandeira)+' ('+esc(l.rede)+') · '+esc(l.bairro)+' · '+esc(l.cidade)+'/'+esc(l.uf)+'</div>'+
+      '<div class="meta">CNPJ '+esc(fmtCnpj(l))+' · '+esc(l.bandeira)+' ('+esc(l.rede)+') · '+esc(l.bairro)+' · '+esc(l.cidade)+'/'+esc(l.uf)+'</div>'+
       '<div class="promo">'+(l.promotores ? '📍 Promotor: <b>'+esc(l.promotores)+'</b>' : '<span style="color:var(--muted)">Fora do roteiro (sem promotor)</span>')+'</div></div>';
     h += '<div class="det-sum"><span><b>'+Object.keys(atual).length+'</b> SKUs Essity marcados</span>'+
       (add ? '<span class="add">+'+add+' incluídos</span>' : '')+(rem ? '<span class="rem">−'+rem+' retirados</span>' : '')+
@@ -579,12 +584,17 @@
   }
   function confirmar(msg, fn){ modal("<p>"+msg+"</p>", function(){ fn(); }); }
   function copiarDeOutra(l){
-    modal('<p>Copiar o mix Essity de outra loja para <b>'+esc(l.nome)+'</b>.<br>Digite o código da loja de origem:</p><input type="number" id="codOrigem" placeholder="Ex.: 1132"><div class="err" id="codErr"></div>', function(ov){
-      var c = Number(ov.querySelector("#codOrigem").value);
-      var o = LOJA_BY[c];
-      if (!o){ ov.querySelector("#codErr").textContent = "Loja não encontrada."; return false; }
+    modal('<p>Copiar o mix Essity de outra loja para <b>'+esc(l.nome)+'</b>.<br>Digite o CNPJ da loja de origem:</p><input type="text" id="codOrigem" placeholder="Ex.: 17.256.512/0055-09"><div class="err" id="codErr"></div>', function(ov){
+      var dig = ov.querySelector("#codOrigem").value.replace(/\D/g, "");
+      // CNPJ repetido: prefere a loja da carteira atual, depois a que tem mix Essity
+      var cands = (CNPJ_BY[dig] || []).slice().sort(function(a, b){
+        return ((b.executivo === st.ex) - (a.executivo === st.ex)) || ((curOf(b.cod).length > 0) - (curOf(a.cod).length > 0));
+      });
+      var o = cands[0] || (dig.length < 14 ? LOJA_BY[Number(dig)] : null);
+      if (!o){ ov.querySelector("#codErr").textContent = "Loja não encontrada. Confira o CNPJ."; return false; }
+      var c = o.cod;
       var m = curOf(c).slice();
-      if (!m.length){ ov.querySelector("#codErr").textContent = "A loja "+c+" ("+o.nome+") não tem SKUs Essity no mix."; return false; }
+      if (!m.length){ ov.querySelector("#codErr").textContent = "A loja "+o.nome+" não tem SKUs Essity no mix."; return false; }
       mudar([l.cod], function(){ return m; });
     }, "Copiar");
   }
@@ -681,14 +691,14 @@
 
   /* ===== exportar ===== */
   function exportar(){
-    var linhas = [["COD_LOJA","LOJA","BANDEIRA","REDE","CIDADE","UF","NO_ROTEIRO","PROMOTOR","COD_SKU","SKU","MARCA","CATEGORIA_SEGMENTO","SITUACAO"]];
+    var linhas = [["COD_LOJA","CNPJ","LOJA","BANDEIRA","REDE","CIDADE","UF","NO_ROTEIRO","PROMOTOR","COD_SKU","SKU","MARCA","CATEGORIA_SEGMENTO","SITUACAO"]];
     carteira().forEach(function(l){
       var sit = isDirty(l.cod) ? "ALTERADA - NAO GRAVADA" : (REMOTE[l.cod] ? "GRAVADA" : "MIX ATUAL");
       var m = curOf(l.cod);
-      if (!m.length) linhas.push([l.cod,l.nome,l.bandeira,l.rede,l.cidade,l.uf,l.promotores?"SIM":"NAO",l.promotores,"","","","",sit+" (SEM MIX ESSITY)"]);
+      if (!m.length) linhas.push([l.cod,fmtCnpj(l),l.nome,l.bandeira,l.rede,l.cidade,l.uf,l.promotores?"SIM":"NAO",l.promotores,"","","","",sit+" (SEM MIX ESSITY)"]);
       m.forEach(function(s){
         var k = SKU_BY[s] || { desc:"", marca:"", cat:"" };
-        linhas.push([l.cod,l.nome,l.bandeira,l.rede,l.cidade,l.uf,l.promotores?"SIM":"NAO",l.promotores,s,k.desc,k.marca,k.cat,sit]);
+        linhas.push([l.cod,fmtCnpj(l),l.nome,l.bandeira,l.rede,l.cidade,l.uf,l.promotores?"SIM":"NAO",l.promotores,s,k.desc,k.marca,k.cat,sit]);
       });
     });
     var csv = "﻿" + linhas.map(function(r){ return r.map(function(v){ v = String(v==null?"":v); return /[;"\n]/.test(v) ? '"'+v.replace(/"/g,'""')+'"' : v; }).join(";"); }).join("\r\n");
@@ -703,8 +713,12 @@
     DADOS = d; CICLO = d.ciclo;
     LOJAS = d.lojas.map(function(r){
       var l = {}; d.colsLoja.forEach(function(c,i){ l[c] = r[i]; });
-      l._busca = fold([l.cod, l.nome, l.bandeira, l.rede, l.cidade, l.bairro, l.promotores].join(" "));
-      LOJA_BY[l.cod] = l; return l;
+      l.cnpj = String(l.cnpj || "");
+      l._busca = fold([l.cod, l.cnpj, fmtCnpj(l), l.nome, l.bandeira, l.rede, l.cidade, l.bairro, l.promotores].join(" "));
+      LOJA_BY[l.cod] = l;
+      // o cadastro tem CNPJ repetido (mesma loja com vários códigos): guarda todas
+      if (l.cnpj.length === 14) (CNPJ_BY[l.cnpj] = CNPJ_BY[l.cnpj] || []).push(l);
+      return l;
     });
     SKUS = d.skus.map(function(r){ var s = {}; d.colsSku.forEach(function(c,i){ s[c] = r[i]; }); SKU_BY[s.cod] = s; return s; });
     Object.keys(d.mix).forEach(function(c){ BASE[c] = d.mix[c]; });
