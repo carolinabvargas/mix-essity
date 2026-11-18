@@ -1,0 +1,320 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Painel do Mix — Essity</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  /* Mesmo visual do painel gerencial da Agenda do Supervisor */
+  :root{
+    --pink:#E71C82; --pink-dot:#F50082; --pink-soft:rgba(231,28,130,0.10);
+    --navy:#20244C; --navy-tag:#00005A; --header-grey:#E7EAEF;
+    --bg:#F3F5F8; --surface:#ffffff; --ink:#20244C; --muted:#6B6F8A; --border:#E3E5EC;
+    --green:#1F7A4F; --green-bg:#E3F4EA; --pending:#B0136A; --pending-bg:#FCE4F0;
+    --red:#C0262D; --red-bg:#FBEAEA;
+    --shadow:0 1px 3px rgba(32,36,76,.06);
+    color-scheme:light;
+  }
+  *{ box-sizing:border-box; }
+  body{ margin:0; font-family:"Inter","Segoe UI",-apple-system,Arial,sans-serif; background:var(--bg); color:var(--ink); -webkit-font-smoothing:antialiased; }
+  .testeira{ position:relative; height:84px; background:var(--header-grey); overflow:hidden; display:flex; align-items:center; justify-content:space-between; padding:0 28px; }
+  .testeira::before{ content:""; position:absolute; inset:0; background:var(--pink); clip-path:polygon(0 0, 68% 0, 64% 100%, 0 100%); }
+  .testeira img{ position:relative; display:block; }
+  .testeira .logo-spot{ height:26px; }
+  .testeira .logo-essity{ height:44px; }
+  .testeira .titulo{ position:relative; color:#fff; font-weight:800; font-size:15px; letter-spacing:.04em; text-transform:uppercase; margin-left:22px; margin-right:auto; padding-left:22px; border-left:1px solid rgba(255,255,255,.45); }
+  .tag{ display:inline-flex; align-items:center; gap:8px; background:var(--navy-tag); color:#fff; font-size:11px; font-weight:800; letter-spacing:.05em; text-transform:uppercase; padding:7px 14px 7px 8px; border-radius:6px; position:relative; z-index:1; }
+  .tag::before{ content:""; width:12px; height:12px; border-radius:50%; background:var(--pink-dot); flex:0 0 auto; }
+  .panel{ margin-bottom:24px; }
+  .panel > .tag{ margin-left:12px; margin-bottom:-12px; }
+  .panel-body{ background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:26px 18px 18px; }
+
+  .wrap{ max-width:1080px; margin:0 auto; padding:24px 20px 60px; }
+  header.top{ margin-bottom:22px; display:flex; align-items:flex-end; justify-content:space-between; gap:12px; flex-wrap:wrap; }
+  header.top h1{ font-size:22px; margin:0 0 4px; color:var(--navy); font-weight:800; }
+  .sub{ color:var(--muted); font-size:14px; }
+  .refresh-row{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+  button{ font:inherit; font-size:13px; font-weight:700; cursor:pointer; border-radius:8px; border:1px solid var(--border); background:var(--surface); padding:8px 14px; color:var(--ink); }
+  button:hover{ border-color:var(--navy); }
+  button:focus-visible{ outline:2px solid var(--pink); outline-offset:2px; }
+  #refreshBtn{ background:var(--pink); border-color:var(--pink); color:#fff; }
+  #refreshBtn:hover{ filter:brightness(1.07); }
+
+  .stats-row{ display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:12px; }
+  .stat-card{ background:var(--navy); color:#fff; border-radius:12px; padding:14px 16px; box-shadow:var(--shadow); }
+  .stat-card .label{ font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.05em; color:rgba(255,255,255,.7); margin-bottom:6px; }
+  .stat-card .value{ font-size:26px; font-weight:800; font-variant-numeric:tabular-nums; }
+  .stat-card .sub{ font-size:12px; color:rgba(255,255,255,.7); margin-top:2px; }
+
+  .filters{ display:flex; gap:8px; flex-wrap:wrap; margin-bottom:12px; }
+  .chip{ font-size:12px; padding:5px 12px; border-radius:99px; border:1px solid var(--border); background:var(--surface); color:var(--muted); cursor:pointer; font-weight:600; }
+  .chip.active{ background:var(--navy); border-color:var(--navy); color:#fff; }
+
+  .ex-list{ display:flex; flex-direction:column; gap:10px; }
+  .ex-card{ background:var(--surface); border:1px solid var(--border); border-radius:12px; box-shadow:var(--shadow); overflow:hidden; }
+  .ex-head{ display:flex; align-items:center; gap:12px; padding:14px 16px; cursor:pointer; flex-wrap:wrap; width:100%; border:0; background:transparent; text-align:left; border-radius:0; font-weight:400; }
+  .ex-head:hover{ background:#FAFBFD; }
+  .ex-head .name{ font-weight:700; flex:1; min-width:180px; font-size:14px; }
+  .badge{ font-size:11px; font-weight:800; letter-spacing:.03em; padding:4px 10px; border-radius:999px; white-space:nowrap; }
+  .badge.ok{ background:var(--green-bg); color:var(--green); }
+  .badge.pending{ background:var(--pending-bg); color:var(--pending); }
+  .ex-head .info{ font-size:12.5px; color:var(--muted); text-align:right; min-width:220px; }
+  .ex-head .info b{ color:var(--ink); }
+  .prog{ height:6px; border-radius:4px; background:var(--border); overflow:hidden; margin-top:4px; }
+  .prog > i{ display:block; height:100%; background:var(--pink); }
+  .ex-head .chev{ color:var(--muted); transition:transform .15s; }
+  .ex-card.open .chev{ transform:rotate(90deg); }
+  .ex-body{ display:none; border-top:1px solid var(--border); padding:6px 16px 14px; }
+  .ex-card.open .ex-body{ display:block; }
+
+  .loja-row{ padding:10px 0; border-bottom:1px solid var(--border); font-size:13px; }
+  .loja-row:last-child{ border-bottom:none; }
+  .loja-row .top{ display:flex; gap:10px; align-items:baseline; flex-wrap:wrap; }
+  .loja-row .loja{ font-weight:700; flex:1; min-width:200px; }
+  .loja-row .meta{ color:var(--muted); font-size:12px; }
+  .loja-row .cnt{ font-size:12px; font-weight:700; white-space:nowrap; }
+  .add{ color:var(--green); }
+  .rem{ color:var(--red); }
+  .sku-chips{ display:flex; flex-wrap:wrap; gap:4px; margin-top:6px; }
+  .sku-chip{ font-size:11px; padding:2px 8px; border-radius:6px; }
+  .sku-chip.add{ background:var(--green-bg); }
+  .sku-chip.rem{ background:var(--red-bg); text-decoration:line-through; }
+  .sai{ display:inline-block; font-size:10.5px; font-weight:800; color:#fff; background:var(--red); padding:1px 8px; border-radius:99px; margin-left:6px; }
+  .empty{ color:var(--muted); font-size:13px; padding:20px 0; text-align:center; }
+  .note{ font-size:12.5px; color:var(--muted); margin:0 0 14px; }
+  .err{ color:var(--red); font-weight:700; }
+
+  @media (max-width: 860px){
+    .testeira{ height:60px; padding:0 16px; }
+    .testeira::before{ clip-path:polygon(0 0, 62% 0, 56% 100%, 0 100%); }
+    .testeira .logo-spot{ height:18px; } .testeira .logo-essity{ height:30px; } .testeira .titulo{ display:none; }
+    .wrap{ padding:18px 16px 40px; }
+    .ex-head .info{ text-align:left; width:100%; min-width:0; }
+  }
+</style>
+</head>
+<body>
+
+<header class="testeira">
+  <img class="logo-spot" src="img/logo_spot.png" alt="SPOT">
+  <span class="titulo">Painel Gerencial · Mix</span>
+  <img class="logo-essity" src="img/logo_essity.png" alt="Essity">
+</header>
+
+<div class="wrap">
+  <header class="top">
+    <div>
+      <h1>Atualização de mix dos executivos</h1>
+      <div class="sub" id="cicloLabel">Carregando…</div>
+    </div>
+    <div class="refresh-row">
+      <span class="sub" id="lastUpdated"></span>
+      <button id="exportBtn" type="button">Exportar alterações (Excel)</button>
+      <button id="refreshBtn" type="button">Atualizar</button>
+    </div>
+  </header>
+
+  <section class="panel">
+    <span class="tag">Indicadores do ciclo</span>
+    <div class="panel-body"><div class="stats-row" id="statsRow"></div></div>
+  </section>
+
+  <section class="panel">
+    <span class="tag">Executivos</span>
+    <div class="panel-body">
+      <p class="note">As alterações abaixo comparam o que o executivo gravou com o mix do início do ciclo (só SKUs Essity). Os concorrentes entram no arquivo final pela regra da categoria.</p>
+      <div class="filters" id="filters"></div>
+      <div class="ex-list" id="exList"><div class="empty">Carregando…</div></div>
+    </div>
+  </section>
+</div>
+
+<script>
+(function(){
+  var MIX_CSV_URL    = "https://docs.google.com/spreadsheets/d/e/2PACX-1vS_KH14djRTydfamGjzwaBB94LuvM_mSzJycRQnuq02FMbUsdC08clxdYWdbHjesTxIJhhcvpwJlmNn/pub?gid=1315640568&single=true&output=csv";
+  var STATUS_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vS_KH14djRTydfamGjzwaBB94LuvM_mSzJycRQnuq02FMbUsdC08clxdYWdbHjesTxIJhhcvpwJlmNn/pub?gid=2016731413&single=true&output=csv";
+  var DATA_URL = "mix_dados.json";
+  var SEM_EXEC = "(SEM EXECUTIVO)";
+
+  var D = null, CICLO = "", LOJA_BY = {}, SKU_BY = {}, BASE = {}, CART = {};
+  var GRAV = {};      // cod_loja -> {skus:[], em, ex}
+  var STATUS = {};    // executivo -> {em}
+  var filtro = "todos", abertos = {};
+
+  function $(id){ return document.getElementById(id); }
+  function esc(s){ return String(s==null?"":s).replace(/[&<>"']/g, function(c){ return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]; }); }
+  function bust(u){ return u + (u.indexOf("?")>-1 ? "&" : "?") + "_=" + Date.now(); }
+  function p2(n){ return n<10 ? "0"+n : ""+n; }
+  function fmtData(iso){ var d = new Date(iso); return isNaN(d) ? (iso||"") : p2(d.getDate())+"/"+p2(d.getMonth()+1)+" "+p2(d.getHours())+":"+p2(d.getMinutes()); }
+  function fmtCiclo(c){ var p = String(c).split("-"); return p.length===3 ? p[2]+"/"+p[1]+"/"+p[0] : c; }
+  function fmtCnpj(l){ var c = String(l.cnpj||""); return c.length===14 ? c.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/, "$1.$2.$3/$4-$5") : "cód. "+l.cod; }
+  function num(n){ return Number(n).toLocaleString("pt-BR"); }
+
+  function parseCsv(text){
+    var rows = [], i = 0, f = "", row = [], q = false;
+    text = (text||"").replace(/\r\n/g,"\n").replace(/^﻿/,"");
+    while (i < text.length){
+      var c = text[i];
+      if (q){ if (c === '"'){ if (text[i+1] === '"'){ f += '"'; i += 2; continue; } q = false; i++; continue; } f += c; i++; continue; }
+      if (c === '"'){ q = true; i++; continue; }
+      if (c === ','){ row.push(f); f = ""; i++; continue; }
+      if (c === '\n'){ row.push(f); rows.push(row); row = []; f = ""; i++; continue; }
+      f += c; i++;
+    }
+    if (f.length || row.length){ row.push(f); rows.push(row); }
+    return rows.filter(function(r){ return r.length > 1 || (r[0]||"").trim(); });
+  }
+  function porNome(rows){
+    var h = rows[0] || [], ix = {};
+    h.forEach(function(c,i){ ix[c.trim().toUpperCase()] = i; });
+    return rows.slice(1).map(function(r){ var o = {}; Object.keys(ix).forEach(function(k){ o[k] = r[ix[k]] || ""; }); return o; });
+  }
+
+  function montar(d){
+    D = d; CICLO = d.ciclo;
+    d.lojas.forEach(function(r){
+      var l = {}; d.colsLoja.forEach(function(c,i){ l[c] = r[i]; });
+      LOJA_BY[l.cod] = l;
+      (CART[l.executivo] = CART[l.executivo] || []).push(l);
+    });
+    d.skus.forEach(function(r){ var s = {}; d.colsSku.forEach(function(c,i){ s[c] = r[i]; }); SKU_BY[s.cod] = s; });
+    Object.keys(d.mix).forEach(function(c){ BASE[c] = d.mix[c]; });
+    $("cicloLabel").textContent = "Ciclo iniciado em " + fmtCiclo(CICLO) + " · mix base de " + d.geradoEm;
+  }
+
+  function carregarPlanilha(){
+    return Promise.all([
+      fetch(bust(MIX_CSV_URL), { cache:"no-store" }).then(function(r){ return r.text(); }),
+      fetch(bust(STATUS_CSV_URL), { cache:"no-store" }).then(function(r){ return r.text(); })
+    ]).then(function(res){
+      GRAV = {}; STATUS = {};
+      porNome(parseCsv(res[0])).forEach(function(r){
+        if (r.CICLO !== CICLO) return;
+        var c = Number(r.COD_LOJA);
+        if (GRAV[c] && GRAV[c].em > r.GRAVADO_EM) return;
+        var s = (r.SKUS||"").trim();
+        GRAV[c] = { skus: s ? s.split(",").map(Number) : [], em: r.GRAVADO_EM, ex: r.EXECUTIVO };
+      });
+      porNome(parseCsv(res[1])).forEach(function(r){
+        if (r.CICLO === CICLO) STATUS[r.EXECUTIVO] = { em: r.GRAVADO_EM };
+      });
+      $("lastUpdated").textContent = "Atualizado às " + fmtData(new Date().toISOString()).slice(6);
+    });
+  }
+
+  function diff(c){
+    var g = GRAV[c]; if (!g) return null;
+    var antes = {}, depois = {};
+    (BASE[c]||[]).forEach(function(s){ antes[s] = 1; });
+    g.skus.forEach(function(s){ depois[s] = 1; });
+    return {
+      add: g.skus.filter(function(s){ return !antes[s]; }),
+      rem: (BASE[c]||[]).filter(function(s){ return !depois[s]; }),
+      total: g.skus.length
+    };
+  }
+
+  function executivos(){
+    var nomes = Object.keys(CART).filter(function(e){ return e !== SEM_EXEC; });
+    // quem gravou loja de "sem executivo" (ou de outra carteira) também aparece
+    Object.keys(GRAV).forEach(function(c){ var e = GRAV[c].ex; if (e && nomes.indexOf(e) === -1) nomes.push(e); });
+    return nomes.map(function(e){
+      var lojas = Object.keys(GRAV).filter(function(c){ return GRAV[c].ex === e; }).map(Number);
+      var add = 0, rem = 0, sai = 0, ult = "";
+      lojas.forEach(function(c){ var d = diff(c); add += d.add.length; rem += d.rem.length; if (!d.total) sai++; if (GRAV[c].em > ult) ult = GRAV[c].em; });
+      return { nome:e, carteira:(CART[e]||[]).length, lojas:lojas, add:add, rem:rem, sai:sai, ultima: ult || (STATUS[e]||{}).em || "" };
+    }).sort(function(a,b){ return (b.lojas.length>0) - (a.lojas.length>0) || a.nome.localeCompare(b.nome); });
+  }
+
+  function render(){
+    var exs = executivos();
+    var comCart = exs.filter(function(e){ return e.carteira > 0; });
+    var gravaram = comCart.filter(function(e){ return e.lojas.length; }).length;
+    var totLojas = comCart.reduce(function(a,e){ return a + e.carteira; }, 0);
+    var lojasGrav = Object.keys(GRAV).length;
+    var add = 0, rem = 0, sai = 0;
+    exs.forEach(function(e){ add += e.add; rem += e.rem; sai += e.sai; });
+    $("statsRow").innerHTML =
+      card("Executivos que gravaram", gravaram+" de "+comCart.length, comCart.length ? Math.round(gravaram*100/comCart.length)+"%" : "") +
+      card("Lojas com mix gravado", num(lojasGrav), "de "+num(totLojas)+" lojas nas carteiras") +
+      card("SKUs Essity incluídos", num(add), "soma de todas as lojas") +
+      card("SKUs Essity retirados", num(rem), "soma de todas as lojas") +
+      card("Lojas que saem do mix", num(sai), "gravadas sem nenhum SKU Essity");
+
+    var itens = [["todos","Todos ("+exs.length+")"],["gravou","Gravaram ("+exs.filter(function(e){return e.lojas.length;}).length+")"],["pendente","Sem gravação ("+exs.filter(function(e){return !e.lojas.length;}).length+")"]];
+    $("filters").innerHTML = itens.map(function(i){ return '<button type="button" class="chip'+(filtro===i[0]?' active':'')+'" data-f="'+i[0]+'">'+i[1]+'</button>'; }).join("");
+    Array.prototype.forEach.call($("filters").children, function(b){ b.onclick = function(){ filtro = b.getAttribute("data-f"); render(); }; });
+
+    var lista = exs.filter(function(e){ return filtro==="todos" || (filtro==="gravou" ? e.lojas.length : !e.lojas.length); });
+    if (!lista.length){ $("exList").innerHTML = '<div class="empty">Nenhum executivo neste filtro.</div>'; return; }
+    $("exList").innerHTML = lista.map(function(e){
+      var pct = e.carteira ? Math.min(100, Math.round(e.lojas.length*100/e.carteira)) : 0;
+      var badge = e.lojas.length ? '<span class="badge ok">Gravou</span>' : '<span class="badge pending">Sem gravação</span>';
+      var info = e.lojas.length
+        ? '<b>'+e.lojas.length+'</b> de '+e.carteira+' lojas gravadas · última em '+esc(fmtData(e.ultima))+
+          '<br><span class="add">+'+e.add+'</span> / <span class="rem">−'+e.rem+'</span> SKUs Essity'
+        : e.carteira+' lojas na carteira';
+      return '<div class="ex-card'+(abertos[e.nome]?' open':'')+'"><button type="button" class="ex-head" data-ex="'+esc(e.nome)+'">'+
+        '<span class="chev">▶</span><span class="name">'+esc(e.nome)+'</span>'+badge+
+        '<span class="info">'+info+'<div class="prog"><i style="width:'+pct+'%"></i></div></span></button>'+
+        '<div class="ex-body">'+(abertos[e.nome] ? corpo(e) : '')+'</div></div>';
+    }).join("");
+    Array.prototype.forEach.call($("exList").querySelectorAll(".ex-head"), function(b){
+      b.onclick = function(){ var n = b.getAttribute("data-ex"); abertos[n] = !abertos[n]; render(); };
+    });
+  }
+  function card(l, v, s){ return '<div class="stat-card"><div class="label">'+l+'</div><div class="value">'+v+'</div><div class="sub">'+s+'</div></div>'; }
+
+  function skuChip(s, cls){ var k = SKU_BY[s] || { desc:"SKU "+s, ean:"" }; return '<span class="sku-chip '+cls+'" title="EAN '+esc(k.ean||"")+'">'+(cls==="add"?"+ ":"− ")+esc(k.desc)+'</span>'; }
+  function corpo(e){
+    if (!e.lojas.length) return '<div class="empty">Este executivo ainda não gravou nenhuma loja neste ciclo.</div>';
+    return e.lojas.sort(function(a,b){ return GRAV[b].em > GRAV[a].em ? 1 : -1; }).map(function(c){
+      var l = LOJA_BY[c] || { cod:c, nome:"Loja "+c }, d = diff(c);
+      var sem = !d.add.length && !d.rem.length;
+      return '<div class="loja-row"><div class="top"><span class="loja">'+esc(l.nome)+(d.total ? '' : '<span class="sai">SAI DO MIX</span>')+'</span>'+
+        '<span class="cnt"><span class="add">+'+d.add.length+'</span> / <span class="rem">−'+d.rem.length+'</span> · '+d.total+' SKUs Essity</span></div>'+
+        '<div class="meta">CNPJ '+esc(fmtCnpj(l))+' · '+esc(l.bandeira||"")+' · '+esc(l.cidade||"")+(l.uf?'/'+esc(l.uf):'')+
+        (l.promotores ? ' · 📍 '+esc(l.promotores) : ' · fora do roteiro')+' · gravada em '+esc(fmtData(GRAV[c].em))+'</div>'+
+        (sem ? '<div class="meta">Gravada sem mudanças em relação ao mix atual.</div>'
+             : '<div class="sku-chips">'+d.add.map(function(s){ return skuChip(s,"add"); }).join("")+d.rem.map(function(s){ return skuChip(s,"rem"); }).join("")+'</div>')+
+        '</div>';
+    }).join("");
+  }
+
+  function exportar(){
+    var linhas = [["EXECUTIVO","COD_LOJA","CNPJ","LOJA","BANDEIRA","CIDADE","UF","PROMOTOR","GRAVADO_EM","ACAO","COD_SKU","EAN","SKU","MARCA","CATEGORIA_SEGMENTO"]];
+    Object.keys(GRAV).forEach(function(c){
+      var l = LOJA_BY[c] || { cod:c }, g = GRAV[c], d = diff(c);
+      var base = [g.ex, c, fmtCnpj(l), l.nome||"", l.bandeira||"", l.cidade||"", l.uf||"", l.promotores||"", fmtData(g.em)];
+      if (!d.add.length && !d.rem.length) linhas.push(base.concat(["SEM MUDANCA","","","","",""]));
+      if (!d.total) linhas.push(base.concat(["LOJA SAI DO MIX","","","","",""]));
+      d.add.forEach(function(s){ var k = SKU_BY[s]||{}; linhas.push(base.concat(["INCLUIDO", s, k.ean||"", k.desc||"", k.marca||"", k.cat||""])); });
+      d.rem.forEach(function(s){ var k = SKU_BY[s]||{}; linhas.push(base.concat(["RETIRADO", s, k.ean||"", k.desc||"", k.marca||"", k.cat||""])); });
+    });
+    var csv = "﻿" + linhas.map(function(r){ return r.map(function(v){ v = String(v==null?"":v); return /[;"\n]/.test(v) ? '"'+v.replace(/"/g,'""')+'"' : v; }).join(";"); }).join("\r\n");
+    var a = document.createElement("a");
+    a.href = URL.createObjectURL(new Blob([csv], { type:"text/csv;charset=utf-8" }));
+    a.download = "alteracoes_mix_ciclo_"+CICLO+".csv";
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  }
+
+  function atualizar(){
+    $("refreshBtn").disabled = true;
+    return carregarPlanilha().then(render).catch(function(){
+      $("lastUpdated").innerHTML = '<span class="err">Não consegui ler a planilha. Tente Atualizar de novo.</span>';
+      render();
+    }).then(function(){ $("refreshBtn").disabled = false; });
+  }
+
+  fetch(bust(DATA_URL), { cache:"no-store" }).then(function(r){ if (!r.ok) throw new Error("HTTP "+r.status); return r.json(); })
+    .then(function(d){ montar(d); return atualizar(); })
+    .catch(function(err){ $("exList").innerHTML = '<div class="empty err">Não consegui carregar a base ('+esc(err.message)+').</div>'; });
+  $("refreshBtn").onclick = atualizar;
+  $("exportBtn").onclick = exportar;
+})();
+</script>
+</body>
+</html>
